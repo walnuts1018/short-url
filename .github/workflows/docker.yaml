@@ -89,5 +89,5 @@ jobs:
         run: |
           docker buildx imagetools create \
             -t ghcr.io/walnuts1018/short-url:latest \
-            -t ghcr.io/walnuts1018/short-url:${{ github.sha }}-${{ github.run_number }} \
+            -t ghcr.io/walnuts1018/short-url:v0.0.${{ github.run_number }} \
             $(printf 'ghcr.io/walnuts1018/short-url@sha256:%s ' *)
