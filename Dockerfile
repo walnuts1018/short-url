@@ -1,4 +1,4 @@
-FROM rust:1.85.1-bullseye as builder
+FROM rust:1.85.1-slim-bullseye as builder
 
 ARG BUILDDIR=/build
 WORKDIR ${BUILDDIR}
@@ -9,9 +9,9 @@ RUN --mount=type=bind,source=src,target=src \
     --mount=type=cache,target=${BUILDDIR}/target/ \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
     <<EOF
-    set -e
-    cargo build --locked --release
-    cp ./target/release/short-url ./
+set -e
+cargo build --locked --release
+cp ./target/release/short-url ./
 EOF
 
 FROM debian:12.10-slim
