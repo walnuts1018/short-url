@@ -7,8 +7,23 @@ services:
     ports:
       - "8080:8080"
     environment:
-      LOG_LEVEL: "debug"
+      PSQL_HOST: postgres
+      PSQL_PORT: 5432
+      PSQL_DATABASE: short_url
+      PSQL_USER: postgres
+      PSQL_PASSWORD: postgres
+      PSQL_SSLMODE: disable
     develop:
       watch:
         - action: rebuild
           path: .
+  postgres:
+    image: postgres:17
+    container_name: psql
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./psql:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
