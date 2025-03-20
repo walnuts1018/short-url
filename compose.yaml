@@ -1,0 +1,14 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    ports:
+      - "8080:8080"
+    environment:
+      LOG_LEVEL: "debug"
+    develop:
+      watch:
+        - action: rebuild
+          path: .
