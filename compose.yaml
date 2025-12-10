@@ -7,19 +7,20 @@ services:
     ports:
       - "8080:8080"
     environment:
-      PSQL_HOST: postgres
-      PSQL_PORT: 5432
-      PSQL_DATABASE: short_url
-      PSQL_USER: postgres
-      PSQL_PASSWORD: postgres
-      PSQL_SSLMODE: disable
+      POSTGRES_DSN: postgres://postgres:postgres@postgres:5432/short_url
+      BASE_URL: http://localhost:8080
+      PORT: 8080
+      RUST_LOG: info
+      RUST_LOG_FORMAT: text
+    depends_on:
+      - postgres
+      - redis
     develop:
       watch:
         - action: rebuild
           path: .
   postgres:
     image: postgres:17
-    container_name: psql
     ports:
       - "5432:5432"
     volumes:
@@ -27,3 +28,14 @@ services:
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "short_url"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
