@@ -1,32 +1,75 @@
 use actix_web::{
-    Either, HttpRequest, HttpResponse, Responder,
-    body::BoxBody,
-    http::header::ContentType,
+    HttpResponse, Responder, ResponseError,
     web::{self, Redirect},
 };
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-use crate::{domain::repository::URLRepository, handler::config::Config};
+use crate::{domain::repository::ShortenedURLRepository, handler::config::Config};
+
+#[derive(Debug, Error)]
+pub enum HandlerError {
+    #[error("Database error: {0}")]
+    DBError(#[from] anyhow::Error),
+    #[error("URL not found")]
+    NotFound,
+}
+
+impl ResponseError for HandlerError {
+    fn error_response(&self) -> HttpResponse {
+        match self {
+            HandlerError::DBError(e) => {
+                tracing::error!("Internal Server Error: {:?}", e);
+                HttpResponse::InternalServerError().body("Internal Server Error")
+            }
+            HandlerError::NotFound => HttpResponse::NotFound().body("URL not found"),
+        }
+    }
+}
 
 #[derive(Clone)]
-pub struct Handler<T: URLRepository> {
+pub struct Handler<T: ShortenedURLRepository> {
     config: Config,
     url_repo: T,
 }
 
-impl<T: URLRepository> Handler<T> {
+impl<T: ShortenedURLRepository> Handler<T> {
     pub fn new(config: Config, url_repo: T) -> Self {
         Handler { config, url_repo }
     }
-}
 
-impl<T: URLRepository> Handler<T> {
-    pub async fn livez(&self) -> impl Responder + use<T> {
+    pub async fn livez(&self) -> impl Responder {
         HttpResponse::Ok().body("Ok")
     }
 
-    pub async fn readyz(&self) -> impl Responder + use<T> {
+    pub async fn readyz(&self) -> impl Responder {
         HttpResponse::Ok().body("Ok")
+    }
+
+    pub async fn shorten(
+        &self,
+        info: web::Json<ShortenParams>,
+    ) -> Result<impl Responder, HandlerError> {
+        let shortened = self
+            .url_repo
+            .create(&info.url, info.custom_id.as_deref(), None)
+            .await
+            .map_err(|e| HandlerError::DBError(e.into()))?;
+
+        Ok(web::Json(ShortenResponse { id: shortened.id }))
+    }
+
+    pub async fn redirect(&self, path: web::Path<String>) -> Result<impl Responder, HandlerError> {
+        let id = path.into_inner();
+
+        let url = self
+            .url_repo
+            .find_by_id(&id)
+            .await
+            .map_err(|e| HandlerError::DBError(e.into()))?
+            .ok_or(HandlerError::NotFound)?;
+
+        Ok(Redirect::to(url.original_url).permanent())
     }
 }
 
@@ -39,50 +82,4 @@ pub struct ShortenParams {
 #[derive(Serialize)]
 pub struct ShortenResponse {
     pub id: String,
-}
-
-impl Responder for ShortenResponse {
-    type Body = BoxBody;
-
-    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
-        match serde_json::to_string(&self) {
-            Ok(body) => HttpResponse::Ok()
-                .content_type(ContentType::json())
-                .body(body),
-            Err(_) => HttpResponse::InternalServerError().finish(),
-        }
-    }
-}
-
-impl<T: URLRepository> Handler<T> {
-    pub async fn shorten(&self, info: web::Json<ShortenParams>) -> impl Responder + use<T> {
-        return match self
-            .url_repo
-            .create(&info.url, info.custom_id.as_deref(), None)
-            .await
-        {
-            Ok(shortened) => Either::Right(ShortenResponse { id: shortened.id }),
-            Err(_) => {
-                Either::Left(HttpResponse::InternalServerError().body("Failed to shorten URL"))
-            }
-        };
-    }
-}
-impl<T: URLRepository> Handler<T> {
-    pub async fn redirect(&self, path: web::Path<(String)>) -> impl Responder + use<T> {
-        let id = path.into_inner();
-        let original_url = match self.url_repo.find_by_id(&id).await {
-            Ok(opt) => opt,
-            Err(_) => {
-                return Either::Left(
-                    HttpResponse::InternalServerError().body("Failed to retrieve URL"),
-                );
-            }
-        };
-
-        match original_url {
-            Some(url) => Either::Right(Redirect::to(url.original_url.clone()).permanent()),
-            None => Either::Left(HttpResponse::NotFound().body("URL not found")),
-        }
-    }
 }

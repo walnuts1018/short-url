@@ -1,8 +1,10 @@
 use actix_web::{App, HttpServer, web};
 use short_url::{
     config::{self, logger::LoggerConfig},
-    handler::handlers::Handler,
+    handler::handlers::{Handler, HandlerError, ShortenParams},
+    postgres::{self, db::DB},
 };
+use std::sync::Arc;
 use tracing_subscriber::fmt::time::ChronoLocal;
 use valuable::Valuable;
 
@@ -27,21 +29,28 @@ async fn main() -> std::io::Result<()> {
     build_logger(&cfg.logger);
 
     tracing::debug!(config = cfg.as_value(), "Configuration loaded successfully");
+    let handler_config = cfg.handler.clone();
+    let repo = Arc::new(postgres::db::DB::new(cfg.postgres).await);
+    let handler = web::Data::new(Handler::new(handler_config, Arc::clone(&repo)));
 
     HttpServer::new(move || {
         App::new()
-            .app_data(Handler::new(cfg.handler.clone()))
+            .app_data(handler.clone())
             .route(
                 "/readyz",
-                web::get().to(|handler: web::Data<Handler>| async move { handler.readyz().await }),
+                web::get().to(|handler: web::Data<Handler<Arc<DB>>>| async move {
+                    handler.readyz().await
+                }),
             )
             .route(
                 "/livez",
-                web::get().to(|handler: web::Data<Handler>| async move { handler.livez().await }),
+                web::get().to(|handler: web::Data<Handler<Arc<DB>>>| async move {
+                    handler.livez().await
+                }),
             )
             .service(web::scope("/api").service(web::scope("/v1").route(
                 "/shorten",
-                web::post().to(|handler: web::Data<Handler>, info| async move {
+                web::post().to(|handler: web::Data<Handler<Arc<DB>>>, info| async move {
                     handler.shorten(info).await
                 }),
             )))

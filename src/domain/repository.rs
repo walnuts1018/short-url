@@ -2,7 +2,7 @@ use crate::domain::models::ShortenedURL;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 
-pub trait URLRepository {
+pub trait ShortenedURLRepository {
     async fn create(
         &self,
         original_url: &str,
