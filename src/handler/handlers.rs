@@ -38,18 +38,18 @@ impl<T: ShortenedURLRepository> Handler<T> {
         Handler { config, url_repo }
     }
 
-    pub async fn livez(&self) -> impl Responder {
+    pub async fn livez(&self) -> impl Responder + use<T> {
         HttpResponse::Ok().body("Ok")
     }
 
-    pub async fn readyz(&self) -> impl Responder {
+    pub async fn readyz(&self) -> impl Responder + use<T> {
         HttpResponse::Ok().body("Ok")
     }
 
     pub async fn shorten(
         &self,
         info: web::Json<ShortenParams>,
-    ) -> Result<impl Responder, HandlerError> {
+    ) -> Result<impl Responder + use<T>, HandlerError> {
         let shortened = self
             .url_repo
             .create(&info.url, info.custom_id.as_deref(), None)
@@ -59,7 +59,10 @@ impl<T: ShortenedURLRepository> Handler<T> {
         Ok(web::Json(ShortenResponse { id: shortened.id }))
     }
 
-    pub async fn redirect(&self, path: web::Path<String>) -> Result<impl Responder, HandlerError> {
+    pub async fn redirect(
+        &self,
+        path: web::Path<String>,
+    ) -> Result<impl Responder + use<T>, HandlerError> {
         let id = path.into_inner();
 
         let url = self
