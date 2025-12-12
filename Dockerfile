@@ -11,7 +11,7 @@ RUN --mount=type=bind,source=src,target=src \
     cargo build --locked --release && \
     cp ${BUILDDIR}/target/release/short-url ${BUILDDIR}/short-url
 
-FROM debian:12.10-slim
+FROM debian:12.12-slim
 WORKDIR /app
 
 RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
