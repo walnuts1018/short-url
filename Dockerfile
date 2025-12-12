@@ -1,4 +1,4 @@
-FROM rust:1.85.1-slim-bullseye as builder
+FROM rust:1.92.0-slim-bullseye as builder
 
 ARG BUILDDIR=/build
 WORKDIR ${BUILDDIR}
