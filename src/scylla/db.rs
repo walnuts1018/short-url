@@ -67,7 +67,7 @@ const CREATE_SHORT_URL_TABLE_QUERY: &str = formatcp!(
         id text,
         original_url text,
         created_at timestamp,
-        expires_at timestamp
+        expires_at timestamp,
         PRIMARY KEY (id)
     )
 "#,
@@ -90,7 +90,7 @@ const CREATE_ID_SEQ_TABLE_QUERY: &str = formatcp!(
     r#"
     CREATE TABLE IF NOT EXISTS {ID_SEQ_TABLE_NAME} (
         name text,
-        current_id bigint
+        current_id bigint,
         PRIMARY KEY (name)
     );
     INSERT INTO {ID_SEQ_TABLE_NAME} (name, current_id) VALUES ('{ID_SEQ_KEY_NAME}', 0) IF NOT EXISTS;
