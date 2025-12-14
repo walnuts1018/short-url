@@ -56,6 +56,14 @@ async fn main() -> std::io::Result<()> {
                     handler.shorten(info).await
                 }),
             )))
+            .route(
+                "/{id}",
+                web::get().to(
+                    |handler: web::Data<Handler<Arc<DB>>>, path: web::Path<String>| async move {
+                        handler.redirect(path).await
+                    },
+                ),
+            )
     })
     .bind(("0.0.0.0", cfg.handler.port))?
     .run()

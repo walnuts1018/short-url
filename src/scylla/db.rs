@@ -2,6 +2,7 @@ use crate::{
     domain::{id::ID, models::ShortenedURL, repository::ShortenedURLRepository},
     scylla::config::Config,
 };
+use actix_web::cookie::time::Date;
 use anyhow::{Ok, Result, anyhow};
 use backon::ExponentialBuilder;
 use backon::Retryable;
@@ -198,9 +199,10 @@ impl DB {
             .execute_unpaged(&self.ps_get_next_id, (current_id + 1, current_id))
             .await?
             .into_rows_result()?
-            .maybe_first_row::<(bool,)>()?;
+            .maybe_first_row::<(bool, i64)>()?;
+        tracing::debug!(result = ?result, "Get next ID result");
 
-        if let Some((applied,)) = result {
+        if let Some((applied, _)) = result {
             if applied {
                 return Ok(current_id + 1);
             }
@@ -237,8 +239,7 @@ impl ShortenedURLRepository for Arc<DB> {
         };
 
         let created_at = Utc::now();
-        let result = self
-            .session
+        self.session
             .execute_unpaged(
                 &self.ps_insert_url,
                 (
@@ -248,14 +249,7 @@ impl ShortenedURLRepository for Arc<DB> {
                     expires_at,
                 ),
             )
-            .await?
-            .into_rows_result()?
-            .first_row::<(bool,)>()?
-            .0;
-
-        if !result {
-            return Err(anyhow!("ID already exists"));
-        }
+            .await?;
 
         Ok(ShortenedURL {
             id,

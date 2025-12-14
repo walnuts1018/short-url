@@ -10,7 +10,7 @@ services:
       SCYLLA_URL: scylladb:9042
       BASE_URL: http://localhost:8080
       PORT: 8080
-      RUST_LOG: info
+      RUST_LOG: debug
       RUST_LOG_FORMAT: text
     depends_on:
       - scylladb-create-keyspace
