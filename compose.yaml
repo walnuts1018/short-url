@@ -7,13 +7,13 @@ services:
     ports:
       - "8080:8080"
     environment:
-      POSTGRES_DSN: postgres://postgres:postgres@postgres:5432/short_url
+      SCYLLA_URL: scylladb:9042
       BASE_URL: http://localhost:8080
       PORT: 8080
       RUST_LOG: info
       RUST_LOG_FORMAT: text
     depends_on:
-      - scylladb
+      - scylladb-create-keyspace
     develop:
       watch:
         - action: rebuild
@@ -25,6 +25,18 @@ services:
       - "9042:9042"
     volumes:
       - scylla_data:/var/lib/scylla
+
+  scylladb-create-keyspace:
+    image: scylladb/scylla:2025.3.3
+    volumes:
+      - ./scylla/initdb.sh:/scylla_scripts/initdb.sh
+    entrypoint: [ "bash", "/scylla_scripts/initdb.sh" ]
+    environment:
+      ENDPOINT: scylladb
+      USER_NAME: cassandra
+      PASSWORD: cassandra
+    depends_on:
+      - scylladb
 
 volumes:
   scylla_data:

@@ -3,12 +3,15 @@ use anyhow::Result;
 use chrono::{DateTime, Utc};
 
 pub trait ShortenedURLRepository {
-    async fn create(
+    fn create(
         &self,
         original_url: &str,
         custom_id: Option<&str>,
         expires_at: Option<DateTime<Utc>>,
-    ) -> Result<ShortenedURL>;
+    ) -> impl std::future::Future<Output = Result<ShortenedURL>> + Send;
 
-    async fn find_by_id(&self, id: &str) -> Result<Option<ShortenedURL>>;
+    fn find_by_id(
+        &self,
+        id: &str,
+    ) -> impl std::future::Future<Output = Result<Option<ShortenedURL>>> + Send;
 }

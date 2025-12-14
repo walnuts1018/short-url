@@ -12,8 +12,11 @@ use rustls::{
     ClientConfig, RootCertStore,
     pki_types::{CertificateDer, PrivateKeyDer},
 };
-use scylla::client::{Compression, session::Session};
 use scylla::{client::session_builder::SessionBuilder, statement::prepared::PreparedStatement};
+use scylla::{
+    client::{Compression, session::Session},
+    statement,
+};
 use std::{fs::File, path::Path, time::Duration};
 use std::{io::BufReader, sync::Arc};
 
@@ -116,6 +119,16 @@ pub struct DB {
 }
 
 impl DB {
+    async fn prepare_statement(
+        session: &Session,
+        statement: &'static str,
+    ) -> Result<PreparedStatement> {
+        session
+            .prepare(statement)
+            .await
+            .map_err(|e| anyhow!("Failed to prepare statement '{}': {}", statement, e))
+    }
+
     pub async fn new(config: Config) -> Result<Self> {
         let tls_context = create_tls_config(&config)?;
 
@@ -127,19 +140,25 @@ impl DB {
             .build()
             .await?;
 
-        session.use_keyspace(&config.keyspace, true).await?;
+        session
+            .use_keyspace(&config.keyspace, true)
+            .await
+            .map_err(|e| anyhow!("Failed to use keyspace '{}': {}", &config.keyspace, e))?;
 
         session
             .query_unpaged(CREATE_SHORT_URL_TABLE_QUERY, &[])
-            .await?;
+            .await
+            .map_err(|e| anyhow!("Failed to create table '{}': {}", SHORT_URL_TABLE_NAME, e))?;
+
         session
             .query_unpaged(CREATE_ID_SEQ_TABLE_QUERY, &[])
-            .await?;
+            .await
+            .map_err(|e| anyhow!("Failed to create table '{}': {}", ID_SEQ_TABLE_NAME, e))?;
 
-        let ps_insert_url = session.prepare(INSERT_URL_QUERY).await?;
-        let ps_find_url = session.prepare(FIND_URL_QUERY).await?;
-        let ps_get_current_id = session.prepare(GET_CURRENT_ID_QUERY).await?;
-        let ps_get_next_id = session.prepare(GET_NEXT_ID_QUERY).await?;
+        let ps_insert_url = Self::prepare_statement(&session, INSERT_URL_QUERY).await?;
+        let ps_find_url = Self::prepare_statement(&session, FIND_URL_QUERY).await?;
+        let ps_get_current_id = Self::prepare_statement(&session, GET_CURRENT_ID_QUERY).await?;
+        let ps_get_next_id = Self::prepare_statement(&session, GET_NEXT_ID_QUERY).await?;
 
         Ok(Self {
             session,
