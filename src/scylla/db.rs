@@ -7,7 +7,7 @@ use backon::ExponentialBuilder;
 use backon::Retryable;
 use chrono::DateTime;
 use chrono::Utc;
-use const_format::{concatcp, formatcp};
+use const_format::formatcp;
 use rustls::{
     ClientConfig, RootCertStore,
     pki_types::{CertificateDer, PrivateKeyDer},
@@ -16,6 +16,7 @@ use scylla::client::{Compression, session::Session};
 use scylla::{client::session_builder::SessionBuilder, statement::prepared::PreparedStatement};
 use std::{fs::File, path::Path, time::Duration};
 use std::{io::BufReader, sync::Arc};
+use url::Url;
 
 fn load_certs(path: impl AsRef<Path>) -> std::io::Result<Vec<CertificateDer<'static>>> {
     let file = File::open(path.as_ref())?;
@@ -103,7 +104,7 @@ const GET_CURRENT_ID_QUERY: &str = formatcp!(
 );
 const GET_NEXT_ID_QUERY: &str = formatcp!(
     r#"
-    UPDATE {ID_SEQ_TABLE_NAME} SET current_id = current_id + 1 WHERE name = '{ID_SEQ_KEY_NAME}' IF current_id = ?
+    UPDATE {ID_SEQ_TABLE_NAME} SET current_id = ? WHERE name = '{ID_SEQ_KEY_NAME}' IF current_id = ?
 "#,
 );
 
@@ -194,7 +195,7 @@ impl DB {
 
         let result = self
             .session
-            .execute_unpaged(&self.ps_get_next_id, (current_id,))
+            .execute_unpaged(&self.ps_get_next_id, (current_id + 1, current_id))
             .await?
             .into_rows_result()?
             .maybe_first_row::<(bool,)>()?;
@@ -211,7 +212,7 @@ impl DB {
 impl ShortenedURLRepository for Arc<DB> {
     async fn create(
         &self,
-        original_url: &str,
+        original_url: Url,
         custom_id: Option<&str>,
         expires_at: Option<DateTime<Utc>>,
     ) -> Result<ShortenedURL> {
@@ -240,7 +241,12 @@ impl ShortenedURLRepository for Arc<DB> {
             .session
             .execute_unpaged(
                 &self.ps_insert_url,
-                (id.0.as_str(), original_url, created_at, expires_at),
+                (
+                    id.0.as_str(),
+                    original_url.to_string(),
+                    created_at,
+                    expires_at,
+                ),
             )
             .await?
             .into_rows_result()?
@@ -253,7 +259,7 @@ impl ShortenedURLRepository for Arc<DB> {
 
         Ok(ShortenedURL {
             id,
-            original_url: original_url.to_string(),
+            original_url,
             created_at,
             expires_at,
         })
@@ -270,7 +276,7 @@ impl ShortenedURLRepository for Arc<DB> {
         if let Some((original_url, created_at, expires_at)) = result {
             Ok(Some(ShortenedURL {
                 id: ID::new(id.to_string()),
-                original_url,
+                original_url: Url::parse(&original_url)?,
                 created_at,
                 expires_at,
             }))

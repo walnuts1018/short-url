@@ -57,7 +57,7 @@ async fn main() -> std::io::Result<()> {
                 }),
             )))
     })
-    .bind(("127.0.0.1", cfg.handler.port))?
+    .bind(("0.0.0.0", cfg.handler.port))?
     .run()
     .await
 }

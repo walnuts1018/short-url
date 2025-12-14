@@ -4,11 +4,14 @@ use actix_web::{
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use url::Url;
 
 use crate::domain::{id::ID, repository::ShortenedURLRepository};
 
 #[derive(Debug, Error)]
 pub enum HandlerError {
+    #[error("Parameter error: {0}")]
+    ParamError(String),
     #[error("Database error: {0}")]
     DBError(#[from] anyhow::Error),
     #[error("URL not found")]
@@ -18,6 +21,7 @@ pub enum HandlerError {
 impl ResponseError for HandlerError {
     fn error_response(&self) -> HttpResponse {
         match self {
+            HandlerError::ParamError(msg) => HttpResponse::BadRequest().body(msg.clone()),
             HandlerError::DBError(e) => {
                 tracing::error!("Internal Server Error: {:?}", e);
                 HttpResponse::InternalServerError().body("Internal Server Error")
@@ -49,9 +53,19 @@ impl<T: ShortenedURLRepository> Handler<T> {
         &self,
         info: web::Json<ShortenParams>,
     ) -> Result<impl Responder + use<T>, HandlerError> {
+        let url = info.url.trim();
+        if url.is_empty() {
+            return Err(HandlerError::ParamError(
+                "The 'url' parameter is required.".to_string(),
+            ));
+        }
+
+        let url = Url::parse(url)
+            .map_err(|e| HandlerError::ParamError(format!("Invalid URL format: {}", e)))?;
+
         let shortened = self
             .url_repo
-            .create(&info.url, info.custom_id.as_deref(), None)
+            .create(url, info.custom_id.as_deref(), None)
             .await
             .map_err(|e| HandlerError::DBError(e.into()))?;
 
@@ -71,7 +85,7 @@ impl<T: ShortenedURLRepository> Handler<T> {
             .map_err(|e| HandlerError::DBError(e.into()))?
             .ok_or(HandlerError::NotFound)?;
 
-        Ok(Redirect::to(url.original_url).permanent())
+        Ok(Redirect::to(url.original_url.to_string()).permanent())
     }
 }
 
