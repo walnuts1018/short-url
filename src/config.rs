@@ -1,6 +1,6 @@
 pub mod logger;
 
-use crate::{config::logger::LoggerConfig, handler, postgres};
+use crate::{config::logger::LoggerConfig, handler, scylla};
 use envconfig::Envconfig;
 use valuable::Valuable;
 
@@ -9,7 +9,7 @@ pub struct Config {
     #[envconfig(nested)]
     pub handler: handler::config::Config,
     #[envconfig(nested)]
-    pub postgres: postgres::config::Config,
+    pub scylla: scylla::config::Config,
     #[envconfig(nested)]
     pub logger: LoggerConfig,
 }

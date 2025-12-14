@@ -9,9 +9,9 @@ RUN --mount=type=bind,source=src,target=src \
     --mount=type=cache,target=${BUILDDIR}/target/ \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
     cargo build --locked --release && \
-    cp ${BUILDDIR}/target/release/short-url ${BUILDDIR}/short-url
+    cp ${BUILDDIR}/target/release/walnuk ${BUILDDIR}/walnuk
 
-FROM debian:12.10-slim
+FROM debian:13.-slim
 WORKDIR /app
 
 RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -29,7 +29,7 @@ RUN adduser \
     appuser
 USER ${UID}
 
-COPY --from=builder /build/short-url /app/short-url
+COPY --from=builder /build/walnuk /app/walnuk
 
 EXPOSE 8080
-CMD ["/app/short-url"]
+CMD ["/app/walnuk"]

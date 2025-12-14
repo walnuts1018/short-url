@@ -1,12 +1,12 @@
 use actix_web::{App, HttpServer, web};
-use short_url::{
-    config::{self, logger::LoggerConfig},
-    handler::handlers::{Handler, HandlerError, ShortenParams},
-    postgres::{self, db::DB},
-};
 use std::sync::Arc;
 use tracing_subscriber::fmt::time::ChronoLocal;
 use valuable::Valuable;
+use walnuk::{
+    config::{self, logger::LoggerConfig},
+    handler::handlers::Handler,
+    scylla::{self, db::DB},
+};
 
 fn build_logger(config: &LoggerConfig) {
     let builder = tracing_subscriber::fmt().with_timer(ChronoLocal::rfc_3339());
@@ -29,9 +29,11 @@ async fn main() -> std::io::Result<()> {
     build_logger(&cfg.logger);
 
     tracing::debug!(config = cfg.as_value(), "Configuration loaded successfully");
-    let handler_config = cfg.handler.clone();
-    let repo = Arc::new(postgres::db::DB::new(cfg.postgres).await);
-    let handler = web::Data::new(Handler::new(handler_config, Arc::clone(&repo)));
+    let db = scylla::db::DB::new(cfg.scylla)
+        .await
+        .expect("Failed to connect to ScyllaDB");
+    let repo = Arc::new(db);
+    let handler = web::Data::new(Handler::new(Arc::clone(&repo)));
 
     HttpServer::new(move || {
         App::new()
@@ -55,6 +57,7 @@ async fn main() -> std::io::Result<()> {
                 }),
             )))
     })
+    .bind(("127.0.0.1", cfg.handler.port))?
     .run()
     .await
 }

@@ -13,29 +13,18 @@ services:
       RUST_LOG: info
       RUST_LOG_FORMAT: text
     depends_on:
-      - postgres
-      - redis
+      - scylladb
     develop:
       watch:
         - action: rebuild
           path: .
-  postgres:
-    image: postgres:17
+  scylladb:
+    image: scylladb/scylla:2025.3.3
+    command: "--smp 1 --memory 256M"
     ports:
-      - "5432:5432"
+      - "9042:9042"
     volumes:
-      - ./psql:/docker-entrypoint-initdb.d
-    environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
-      POSTGRES_DB: "short_url"
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+      - scylla_data:/var/lib/scylla
 
 volumes:
-  redis_data:
+  scylla_data:

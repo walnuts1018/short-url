@@ -5,7 +5,7 @@ use actix_web::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{domain::repository::ShortenedURLRepository, handler::config::Config};
+use crate::domain::{id::ID, repository::ShortenedURLRepository};
 
 #[derive(Debug, Error)]
 pub enum HandlerError {
@@ -29,13 +29,12 @@ impl ResponseError for HandlerError {
 
 #[derive(Clone)]
 pub struct Handler<T: ShortenedURLRepository> {
-    config: Config,
     url_repo: T,
 }
 
 impl<T: ShortenedURLRepository> Handler<T> {
-    pub fn new(config: Config, url_repo: T) -> Self {
-        Handler { config, url_repo }
+    pub fn new(url_repo: T) -> Self {
+        Handler { url_repo }
     }
 
     pub async fn livez(&self) -> impl Responder + use<T> {
@@ -84,5 +83,5 @@ pub struct ShortenParams {
 
 #[derive(Serialize)]
 pub struct ShortenResponse {
-    pub id: String,
+    pub id: ID,
 }
