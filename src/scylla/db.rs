@@ -12,11 +12,8 @@ use rustls::{
     ClientConfig, RootCertStore,
     pki_types::{CertificateDer, PrivateKeyDer},
 };
+use scylla::client::{Compression, session::Session};
 use scylla::{client::session_builder::SessionBuilder, statement::prepared::PreparedStatement};
-use scylla::{
-    client::{Compression, session::Session},
-    statement,
-};
 use std::{fs::File, path::Path, time::Duration};
 use std::{io::BufReader, sync::Arc};
 
