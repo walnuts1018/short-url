@@ -92,18 +92,18 @@ const CREATE_ID_SEQ_TABLE_QUERY: &str = formatcp!(
         name text,
         current_id bigint,
         PRIMARY KEY (name)
-    );
-    INSERT INTO {ID_SEQ_TABLE_NAME} (name, current_id) VALUES ('{ID_SEQ_KEY_NAME}', 0) IF NOT EXISTS;
+    )
 "#,
 );
+
 const GET_CURRENT_ID_QUERY: &str = formatcp!(
     r#"
-    SELECT id FROM {ID_SEQ_TABLE_NAME} WHERE name = '{ID_SEQ_KEY_NAME}'
+    SELECT current_id FROM {ID_SEQ_TABLE_NAME} WHERE name = '{ID_SEQ_KEY_NAME}'
 "#,
 );
 const GET_NEXT_ID_QUERY: &str = concatcp!(
     r#"
-    UPDATE {ID_SEQ_TABLE_NAME} SET current_id = current_id + 1 WHERE name = '{ID_SEQ_KEY_NAME} IF current_id = ?
+    UPDATE {ID_SEQ_TABLE_NAME} SET current_id = current_id + 1 WHERE name = '{ID_SEQ_KEY_NAME}' IF current_id = ?
 "#,
 );
 
@@ -151,6 +151,22 @@ impl DB {
             .query_unpaged(CREATE_ID_SEQ_TABLE_QUERY, &[])
             .await
             .map_err(|e| anyhow!("Failed to create table '{}': {}", ID_SEQ_TABLE_NAME, e))?;
+        session
+            .query_unpaged(
+                format!(
+                    "INSERT INTO {} (name, current_id) VALUES (?, 0) IF NOT EXISTS",
+                    ID_SEQ_TABLE_NAME
+                ),
+                (ID_SEQ_KEY_NAME,),
+            )
+            .await
+            .map_err(|e| {
+                anyhow!(
+                    "Failed to initialize ID sequence in table '{}': {}",
+                    ID_SEQ_TABLE_NAME,
+                    e
+                )
+            })?;
 
         let ps_insert_url = Self::prepare_statement(&session, INSERT_URL_QUERY).await?;
         let ps_find_url = Self::prepare_statement(&session, FIND_URL_QUERY).await?;
