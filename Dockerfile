@@ -11,24 +11,8 @@ RUN --mount=type=bind,source=src,target=src \
     cargo build --locked --release && \
     cp ${BUILDDIR}/target/release/walnuk ${BUILDDIR}/walnuk
 
-FROM debian:13.-slim
+FROM gcr.io/distroless/cc-debian13:nonroot
 WORKDIR /app
-
-RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    apt-get -y update && apt-get install -y ca-certificates
-
-ARG UID=10001
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    appuser
-USER ${UID}
-
 COPY --from=builder /build/walnuk /app/walnuk
 
 EXPOSE 8080
