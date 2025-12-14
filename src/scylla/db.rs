@@ -101,7 +101,7 @@ const GET_CURRENT_ID_QUERY: &str = formatcp!(
     SELECT current_id FROM {ID_SEQ_TABLE_NAME} WHERE name = '{ID_SEQ_KEY_NAME}'
 "#,
 );
-const GET_NEXT_ID_QUERY: &str = concatcp!(
+const GET_NEXT_ID_QUERY: &str = formatcp!(
     r#"
     UPDATE {ID_SEQ_TABLE_NAME} SET current_id = current_id + 1 WHERE name = '{ID_SEQ_KEY_NAME}' IF current_id = ?
 "#,
