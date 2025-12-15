@@ -36,6 +36,16 @@
         "failedTitle": "コピーできませんでした",
         "failedDescription": "お使いのブラウザ設定により、クリップボードへの書き込みが拒否されました。下のリンクを手動でコピーしてください。"
     },
+    "share": {
+        "label": "シェア",
+        "x": "X",
+        "line": "LINE",
+        "hatebu": "はてなブックマーク",
+        "shareText": "短縮URLサービス「waln.uk」を使ってみて！",
+        "promptTitle": "シェアしませんか？",
+        "promptDescription": "よろしければ、短縮URLサービス「waln.uk」をシェアしてください！",
+        "notNow": "今はしない"
+    },
     "history": {
         "title": "作成履歴",
         "empty": "まだ作成されたURLはありません。",

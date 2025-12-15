@@ -1,0 +1,34 @@
+FROM node:22.21.1-bookworm-slim AS base
+
+FROM base AS deps
+
+WORKDIR /app
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN corepack enable
+
+RUN --mount=type=bind,source=package.json,target=package.json \
+    --mount=type=bind,source=pnpm-lock.yaml,target=pnpm-lock.yaml \
+    --mount=type=bind,source=pnpm-workspace.yaml,target=pnpm-workspace.yaml \
+    --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+FROM base AS runner
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN corepack enable
+
+COPY ./app ./app
+COPY ./components ./components
+COPY ./lib ./lib
+COPY next.config.ts package.json pnpm-lock.yaml pnpm-workspace.yaml postcss.config.mjs tsconfig.json ./
+
+COPY --from=deps /app/node_modules ./node_modules
+
+CMD [ "pnpm", "run", "dev", "--webpack"]

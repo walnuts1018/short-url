@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import {
   useActionState,
   useEffect,
@@ -10,10 +12,12 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
+import { FaLine, FaXTwitter } from "react-icons/fa6";
 import { MdCheckCircle, MdClose, MdErrorOutline } from "react-icons/md";
 
 import { shortenAction, type ShortenActionState } from "../_actions/shorten";
 import { CopyButton } from "./copy-button";
+import HatenaBookmarkIcon from "./hatenabookmark_symbolmark.png";
 
 import {
   Dialog,
@@ -34,6 +38,7 @@ type ShortenHistoryItem = {
 
 const SHORTEN_HISTORY_STORAGE_KEY_V1 = "short-url:history:v1";
 const SHORTEN_HISTORY_STORAGE_KEY_V2 = "short-url:history:v2";
+const SHORTEN_CREATE_COUNT_STORAGE_KEY_V1 = "short-url:create-count:v1";
 const MAX_HISTORY_ITEMS = 20;
 
 function normalizeShortPath(value: string): string | null {
@@ -109,6 +114,25 @@ function saveShortenHistory(items: ShortenHistoryItem[]) {
   }
 }
 
+function bumpCreateCount(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = window.localStorage.getItem(
+      SHORTEN_CREATE_COUNT_STORAGE_KEY_V1
+    );
+    const current = raw ? Number.parseInt(raw, 10) : 0;
+    const safeCurrent = Number.isFinite(current) && current >= 0 ? current : 0;
+    const next = safeCurrent + 1;
+    window.localStorage.setItem(
+      SHORTEN_CREATE_COUNT_STORAGE_KEY_V1,
+      String(next)
+    );
+    return next;
+  } catch {
+    return 0;
+  }
+}
+
 export function ShortenForm({
   defaultUrl,
   requestOrigin,
@@ -136,7 +160,9 @@ export function ShortenForm({
   const [toastTitle, setToastTitle] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string>("");
   const [successOpen, setSuccessOpen] = useState(false);
-  const [lastOriginalUrl, setLastOriginalUrl] = useState<string>("");
+  const [sharePromptOpen, setSharePromptOpen] = useState(false);
+  const [shouldPromptShareAfterClose, setShouldPromptShareAfterClose] =
+    useState(false);
   const [clearAllConfirmOpen, setClearAllConfirmOpen] = useState(false);
   const [history, setHistory] = useState<ShortenHistoryItem[]>(() =>
     loadShortenHistory()
@@ -266,7 +292,12 @@ export function ShortenForm({
   useEffect(() => {
     if (state.status === "success") {
       const submittedOriginal = lastSubmittedNormalizedRef.current;
-      setLastOriginalUrl(submittedOriginal);
+
+      const createCount = bumpCreateCount();
+      setShouldPromptShareAfterClose(
+        createCount === 3 || (createCount > 0 && createCount % 10 === 0)
+      );
+
       const newItem: ShortenHistoryItem = {
         id: state.id,
         shortPath: `/${state.id}`,
@@ -296,7 +327,36 @@ export function ShortenForm({
         durationMs: 4500,
       });
     }
-  }, [showToast, state, t]);
+  }, [requestOrigin, showToast, state, t]);
+
+  const shareText = t("share.shareText");
+
+  const shareToX = (urlToShare: string) => {
+    const intent = new URL("https://twitter.com/intent/tweet");
+    intent.searchParams.set("url", urlToShare);
+    intent.searchParams.set("text", shareText);
+    window.open(intent.toString(), "_blank", "noopener,noreferrer");
+  };
+
+  const shareToHatebu = (urlToShare: string) => {
+    const intent = new URL("https://b.hatena.ne.jp/add");
+    intent.searchParams.set("mode", "confirm");
+    intent.searchParams.set("url", urlToShare);
+    intent.searchParams.set("title", shareText);
+    window.open(intent.toString(), "_blank", "noopener,noreferrer");
+  };
+
+  const shareToLine = (urlToShare: string) => {
+    const intent = new URL("https://social-plugins.line.me/lineit/share");
+    intent.searchParams.set("url", urlToShare);
+    window.open(intent.toString(), "_blank", "noopener,noreferrer");
+  };
+
+  const siteUrlForShare = useMemo(() => {
+    if (requestOrigin) return requestOrigin;
+    if (typeof window !== "undefined") return String(window.location.origin);
+    return "";
+  }, [requestOrigin]);
 
   return (
     <form
@@ -363,7 +423,16 @@ export function ShortenForm({
         </button>
       </div>
 
-      <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
+      <Dialog
+        open={successOpen}
+        onOpenChange={(open) => {
+          if (!open && successOpen && shouldPromptShareAfterClose) {
+            setShouldPromptShareAfterClose(false);
+            setSharePromptOpen(true);
+          }
+          setSuccessOpen(open);
+        }}
+      >
         <DialogContent className="border-primary/20 shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-xl text-[#f86b7c]">
@@ -420,9 +489,82 @@ export function ShortenForm({
             <button
               type="button"
               className="border-border bg-card text-foreground hover:bg-secondary focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition focus-visible:ring-2 focus-visible:outline-none"
-              onClick={() => setSuccessOpen(false)}
+              onClick={() => {
+                if (shouldPromptShareAfterClose) {
+                  setShouldPromptShareAfterClose(false);
+                  setSharePromptOpen(true);
+                }
+                setSuccessOpen(false);
+              }}
             >
               {t("dialog.close")}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={sharePromptOpen} onOpenChange={setSharePromptOpen}>
+        <DialogContent className="border-primary/20 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-[#f86b7c]">
+              {t("share.promptTitle")}
+            </DialogTitle>
+            <DialogDescription>
+              {t("share.promptDescription")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                aria-label={t("share.x")}
+                title={t("share.x")}
+                className="border-border bg-card text-foreground hover:bg-secondary focus-visible:ring-ring inline-flex size-10 items-center justify-center rounded-full border transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60"
+                onClick={() => void shareToX(siteUrlForShare)}
+                disabled={!siteUrlForShare}
+              >
+                <FaXTwitter className="size-5" aria-hidden />
+                <span className="sr-only">{t("share.x")}</span>
+              </button>
+              <button
+                type="button"
+                aria-label={t("share.line")}
+                title={t("share.line")}
+                className="border-border bg-card text-foreground hover:bg-secondary focus-visible:ring-ring inline-flex size-10 items-center justify-center rounded-full border transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60"
+                onClick={() => void shareToLine(siteUrlForShare)}
+                disabled={!siteUrlForShare}
+              >
+                <FaLine className="size-5" aria-hidden />
+                <span className="sr-only">{t("share.line")}</span>
+              </button>
+              <button
+                type="button"
+                aria-label={t("share.hatebu")}
+                title={t("share.hatebu")}
+                className="border-border bg-card text-foreground hover:bg-secondary focus-visible:ring-ring inline-flex size-10 items-center justify-center rounded-full border transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60"
+                onClick={() => void shareToHatebu(siteUrlForShare)}
+                disabled={!siteUrlForShare}
+              >
+                <Image
+                  src={HatenaBookmarkIcon}
+                  alt="はてなブックマーク"
+                  className="size-5"
+                  height={16}
+                  width={16}
+                />{" "}
+                <span className="sr-only">{t("share.hatebu")}</span>
+              </button>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-row justify-end gap-2">
+            <button
+              type="button"
+              className="border-border bg-card text-foreground hover:bg-secondary focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition focus-visible:ring-2 focus-visible:outline-none"
+              onClick={() => setSharePromptOpen(false)}
+            >
+              {t("share.notNow")}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -512,6 +654,51 @@ export function ShortenForm({
           )}
         </div>
       ) : null}
+
+      <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+        <p className="text-muted-foreground text-xs font-medium">
+          {t("share.label")}
+        </p>
+        <button
+          type="button"
+          aria-label={t("share.x")}
+          title={t("share.x")}
+          className="border-border bg-card text-foreground hover:bg-secondary focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-full border transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60"
+          onClick={() => void shareToX(siteUrlForShare)}
+          disabled={!siteUrlForShare}
+        >
+          <FaXTwitter className="size-4" aria-hidden />
+          <span className="sr-only">{t("share.x")}</span>
+        </button>
+        <button
+          type="button"
+          aria-label={t("share.line")}
+          title={t("share.line")}
+          className="border-border bg-card text-foreground hover:bg-secondary focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-full border transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60"
+          onClick={() => void shareToLine(siteUrlForShare)}
+          disabled={!siteUrlForShare}
+        >
+          <FaLine className="size-4" aria-hidden />
+          <span className="sr-only">{t("share.line")}</span>
+        </button>
+        <button
+          type="button"
+          aria-label={t("share.hatebu")}
+          title={t("share.hatebu")}
+          className="border-border bg-card text-foreground hover:bg-secondary focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-full border transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60"
+          onClick={() => void shareToHatebu(siteUrlForShare)}
+          disabled={!siteUrlForShare}
+        >
+          <Image
+            src={HatenaBookmarkIcon}
+            alt="はてなブックマーク"
+            className="size-4"
+            height={16}
+            width={16}
+          />
+          <span className="sr-only">{t("share.hatebu")}</span>
+        </button>
+      </div>
 
       <div className="border-border/60 mt-6 grid gap-2 border-t pt-4">
         <div className="flex items-center justify-between gap-3">

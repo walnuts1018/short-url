@@ -41,7 +41,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: Dockerfile.frontend.local
     ports:
       - "3000:3000"
     environment:
@@ -49,6 +49,19 @@ services:
       API_ENDPOINT: http://server:8080
     depends_on:
       - server
+    develop:
+      watch:
+        - action: rebuild
+          path: package.json
+        - action: sync
+          path: ./app
+          target: /app/app
+        - action: sync
+          path: ./components
+          target: /app/components
+        - action: sync
+          path: ./lib
+          target: /app/lib
 
 volumes:
   scylla_data:
