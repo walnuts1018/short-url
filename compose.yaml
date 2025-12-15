@@ -38,5 +38,16 @@ services:
     depends_on:
       - scylladb
 
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_ENDPOINT: http://localhost:8080
+    depends_on:
+      - server
+
 volumes:
   scylla_data:
