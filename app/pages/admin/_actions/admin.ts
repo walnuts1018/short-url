@@ -62,7 +62,10 @@ async function backendFetch(
   const xRealIp = incoming.get("x-real-ip")?.trim();
   const forwardedIp =
     cfConnectingIp ||
-    xForwardedFor?.split(",").map((s) => s.trim()).filter(Boolean)[0] ||
+    xForwardedFor
+      ?.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)[0] ||
     xRealIp ||
     "";
   if (forwardedIp && !outgoing.has("cf-connecting-ip")) {
