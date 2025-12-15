@@ -38,17 +38,20 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(handler.clone())
-            .route(
-                "/readyz",
-                web::get().to(|handler: web::Data<Handler<Arc<DB>>>| async move {
-                    handler.readyz().await
-                }),
-            )
-            .route(
-                "/livez",
-                web::get().to(|handler: web::Data<Handler<Arc<DB>>>| async move {
-                    handler.livez().await
-                }),
+            .service(
+                web::scope("/health")
+                    .route(
+                        "/readyz",
+                        web::get().to(|handler: web::Data<Handler<Arc<DB>>>| async move {
+                            handler.readyz().await
+                        }),
+                    )
+                    .route(
+                        "/livez",
+                        web::get().to(|handler: web::Data<Handler<Arc<DB>>>| async move {
+                            handler.livez().await
+                        }),
+                    ),
             )
             .service(web::scope("/api").service(web::scope("/v1").route(
                 "/shorten",
