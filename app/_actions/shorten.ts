@@ -59,16 +59,20 @@ function normalizeUrl(input: string): string {
   const hasScheme = /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value);
   const withScheme = hasScheme ? value : `https://${value}`;
 
-  if (!withScheme.toLowerCase().startsWith("https:")) {
-    throw new Error("https:// のURLのみ対応しています");
+  if (
+    hasScheme &&
+    !withScheme.toLowerCase().startsWith("https:") &&
+    !withScheme.toLowerCase().startsWith("http:")
+  ) {
+    throw new Error("http:// または https:// のURLのみ対応しています");
   }
 
   const encoded = encodeURI(withScheme);
 
   try {
     const parsed = new URL(encoded);
-    if (parsed.protocol !== "https:") {
-      throw new Error();
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      throw new Error("http:// または https:// のURLのみ対応しています");
     }
 
     const asciiHost = domainToASCII(parsed.hostname);

@@ -55,8 +55,6 @@ async function backendFetch(
     outgoing.set("user-agent", ua);
   }
 
-  // Forward client IP to backend.
-  // Prefer Cloudflare's cf-connecting-ip; otherwise fall back to x-forwarded-for/x-real-ip.
   const cfConnectingIp = incoming.get("cf-connecting-ip")?.trim();
   const xForwardedFor = incoming.get("x-forwarded-for")?.trim();
   const xRealIp = incoming.get("x-real-ip")?.trim();

@@ -116,6 +116,15 @@ impl<T: ShortenedURLRepository> Handler<T> {
         let url = Url::parse(url)
             .map_err(|e| HandlerError::ParamError(format!("Invalid URL format: {}", e)))?;
 
+        match url.scheme() {
+            "http" | "https" => {}
+            _ => {
+                return Err(HandlerError::ParamError(
+                    "Only http and https URLs are supported.".to_string(),
+                ));
+            }
+        }
+
         let shortened = self
             .url_repo
             .create(url, info.custom_id.as_deref(), None)
@@ -125,7 +134,6 @@ impl<T: ShortenedURLRepository> Handler<T> {
         let (ip, user_agent, request_id) = Self::extract_request_meta(&req);
         let now = chrono::Utc::now();
 
-        // Best-effort: save creator meta (TTL=30d). Stored once per id.
         let _ = self
             .url_repo
             .save_create_meta_if_absent(
@@ -137,7 +145,6 @@ impl<T: ShortenedURLRepository> Handler<T> {
             )
             .await;
 
-        // Save to Scylla (TTL=30d) and also emit to stdout via tracing.
         let _ = self
             .url_repo
             .log_create(
@@ -227,6 +234,35 @@ impl<T: ShortenedURLRepository> Handler<T> {
                 request_id = request_id.as_deref().unwrap_or("")
             );
             return Err(HandlerError::Disabled);
+        }
+
+        match url.original_url.scheme() {
+            "http" | "https" => {}
+            _ => {
+                let _ = self.url_repo.set_last_access(id.0.as_str(), now, 400).await;
+                let _ = self
+                    .url_repo
+                    .log_access(
+                        id.0.as_str(),
+                        now,
+                        ip.as_deref(),
+                        user_agent.as_deref(),
+                        request_id.as_deref(),
+                        400,
+                    )
+                    .await;
+                tracing::info!(
+                    event = "short_url_access",
+                    id = id.0.as_str(),
+                    status_code = 400,
+                    ip = ip.as_deref().unwrap_or(""),
+                    user_agent = user_agent.as_deref().unwrap_or(""),
+                    request_id = request_id.as_deref().unwrap_or("")
+                );
+                return Err(HandlerError::ParamError(
+                    "Only http and https URLs are supported.".to_string(),
+                ));
+            }
         }
 
         let _ = self.url_repo.set_last_access(id.0.as_str(), now, 308).await;
@@ -367,7 +403,6 @@ impl<T: ShortenedURLRepository> Handler<T> {
             ));
         }
 
-        // Ensure the link exists.
         let url = self
             .url_repo
             .find_by_id(ID::new(id.to_string()))

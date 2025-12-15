@@ -10,7 +10,7 @@
     "submitting": "処理中…",
     "validation": {
       "required": "URLを入力してください",
-      "httpsOnly": "https:// のURLのみ対応しています",
+      "httpsOnly": "http:// または https:// のURLのみ対応しています",
       "domainInvalid": "ドメイン名が正しくありません",
       "invalid": "URLの形式が正しくありません"
     }

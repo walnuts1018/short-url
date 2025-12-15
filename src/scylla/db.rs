@@ -457,8 +457,6 @@ impl DB {
         let ps_get_create_meta =
             Self::prepare_statement(&session, Statement::new(GET_CREATE_META_QUERY)).await?;
 
-        // Best-effort backfill: make existing short_urls visible in the created_at-ordered listing
-        // table. This prevents the admin list from showing only newly-created links after rollout.
         let has_any = session
             .query_unpaged(
                 CHECK_BY_CREATED_AT_ANY_QUERY,
@@ -579,8 +577,6 @@ impl ShortenedURLRepository for Arc<DB> {
 
         let created_at = Utc::now();
 
-        // INSERT ... IF NOT EXISTS can return existing row values when not applied.
-        // We use that to avoid overwriting state and to avoid duplicating index rows.
         let insert_res = self
             .session
             .execute_unpaged(
@@ -594,9 +590,6 @@ impl ShortenedURLRepository for Arc<DB> {
             )
             .await?;
 
-        // NOTE: For LWT (IF NOT EXISTS), Scylla returns extra columns alongside `[applied]`.
-        // The column order here is what Scylla returns for this statement:
-        // ([applied], id, created_at, expires_at, original_url).
         let insert_row = insert_res.into_rows_result()?.maybe_first_row::<(
             bool,
             Option<String>,
@@ -606,12 +599,8 @@ impl ShortenedURLRepository for Arc<DB> {
         )>()?;
 
         let (applied, final_original_url, final_created_at, final_expires_at) = match insert_row {
-            Some((true, _, _, _, _)) => {
-                // Inserted.
-                (true, original_url, created_at, expires_at)
-            }
+            Some((true, _, _, _, _)) => (true, original_url, created_at, expires_at),
             Some((false, _id, created_at, expires_at, original_url)) => {
-                // Existing.
                 let existing_original_url = original_url
                     .as_deref()
                     .ok_or_else(|| anyhow!("Failed to decode existing original_url"))?;
@@ -624,14 +613,10 @@ impl ShortenedURLRepository for Arc<DB> {
                     expires_at,
                 )
             }
-            None => {
-                // Some clusters might not return rows for IF NOT EXISTS.
-                (true, original_url, created_at, expires_at)
-            }
+            None => (true, original_url, created_at, expires_at),
         };
 
         if applied {
-            // Initialize state as enabled.
             self.session
                 .execute_unpaged(
                     &self.ps_upsert_state,
@@ -644,7 +629,6 @@ impl ShortenedURLRepository for Arc<DB> {
                 )
                 .await?;
 
-            // Maintain created_at-ordered listing table.
             let _ = self
                 .session
                 .execute_unpaged(

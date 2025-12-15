@@ -67,7 +67,6 @@ export function loadShortenHistory(): ShortenHistoryItem[] {
       .slice(0, MAX_HISTORY_ITEMS);
 
     if (!rawV2 && mapped.length > 0) {
-      // Migrate v1 -> v2 once.
       saveShortenHistory(mapped);
     }
 
@@ -140,7 +139,7 @@ export function getShortenHistorySnapshot(): ShortenHistorySnapshot {
   cachedHistoryKey = key;
   cachedHistorySnapshot = loadShortenHistory();
 
-  // loadShortenHistory may migrate v1 -> v2; refresh the key once.
+
   const migratedRawV2 = window.localStorage.getItem(
     SHORTEN_HISTORY_STORAGE_KEY_V2
   );
@@ -152,7 +151,6 @@ export function getShortenHistorySnapshot(): ShortenHistorySnapshot {
 }
 
 export function getShortenHistoryServerSnapshot(): ShortenHistorySnapshot {
-  // Server snapshot: force deterministic output to prevent hydration mismatch.
   return null;
 }
 

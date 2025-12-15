@@ -100,7 +100,11 @@ export function ShortenForm({
     const hasScheme = /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value);
     const withScheme = hasScheme ? value : `https://${value}`;
 
-    if (hasScheme && !value.toLowerCase().startsWith("https:")) {
+    if (
+      hasScheme &&
+      !value.toLowerCase().startsWith("https:") &&
+      !value.toLowerCase().startsWith("http:")
+    ) {
       return {
         normalized: null as string | null,
         error: t("form.validation.httpsOnly"),
@@ -111,7 +115,7 @@ export function ShortenForm({
 
     try {
       const parsed = new URL(encoded);
-      if (parsed.protocol !== "https:") {
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
         return {
           normalized: null as string | null,
           error: t("form.validation.httpsOnly"),
@@ -199,7 +203,6 @@ export function ShortenForm({
       setToastMessage(args.message ?? "");
       setToastVisible(true);
 
-      // Re-trigger enter animation even if already open.
       setToastOpen(false);
       window.requestAnimationFrame(() => setToastOpen(true));
 
