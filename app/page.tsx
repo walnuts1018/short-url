@@ -8,7 +8,7 @@ async function getRequestOriginFromHeaders(): Promise<string> {
   const host = h.get("x-forwarded-host") ?? h.get("host");
   if (!host) return "";
 
-  const proto = h.get("x-forwarded-proto") ?? "http";
+  const proto = h.get("x-forwarded-proto") ?? "https";
   return `${proto}://${host}`;
 }
 
