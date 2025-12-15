@@ -1,5 +1,6 @@
 /* eslint-disable import/no-default-export */
 import { headers } from "next/headers";
+import Link from "next/link";
 import { ShortenForm } from "./components/shorten-form";
 import { getServerT } from "./i18n/server";
 
@@ -32,6 +33,15 @@ export default async function Home() {
             <ShortenForm requestOrigin={requestOrigin} />
           </section>
         </main>
+
+        <footer className="mt-8 text-center text-xs">
+          <Link
+            href="/terms"
+            className="text-muted-foreground hover:text-foreground underline underline-offset-2"
+          >
+            利用規約
+          </Link>
+        </footer>
       </div>
     </div>
   );
