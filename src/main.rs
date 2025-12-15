@@ -55,15 +55,54 @@ async fn main() -> std::io::Result<()> {
             )
             .service(web::scope("/api").service(web::scope("/v1").route(
                 "/shorten",
-                web::post().to(|handler: web::Data<Handler<Arc<DB>>>, info| async move {
-                    handler.shorten(info).await
-                }),
+                web::post().to(
+                    |handler: web::Data<Handler<Arc<DB>>>, req: actix_web::HttpRequest, info: web::Json<walnuk::handler::handlers::ShortenParams>| async move {
+                        handler.shorten(req, info).await
+                    },
+                ),
+            )
+            .service(
+                web::scope("/admin").service(
+                    web::scope("/links")
+                        .route(
+                            "",
+                            web::get().to(
+                                |handler: web::Data<Handler<Arc<DB>>>| async move {
+                                    handler.admin_list_links().await
+                                },
+                            ),
+                        )
+                        .route(
+                            "/{id}",
+                            web::get().to(
+                                |handler: web::Data<Handler<Arc<DB>>>, path| async move {
+                                    handler.admin_get_link(path).await
+                                },
+                            ),
+                        )
+                        .route(
+                            "/{id}/disable",
+                            web::post().to(
+                                |handler: web::Data<Handler<Arc<DB>>>, path| async move {
+                                    handler.admin_disable(path).await
+                                },
+                            ),
+                        )
+                        .route(
+                            "/{id}/restore",
+                            web::post().to(
+                                |handler: web::Data<Handler<Arc<DB>>>, path| async move {
+                                    handler.admin_restore(path).await
+                                },
+                            ),
+                        ),
+                ),
             )))
             .route(
                 "/{id}",
                 web::get().to(
-                    |handler: web::Data<Handler<Arc<DB>>>, path: web::Path<String>| async move {
-                        handler.redirect(path).await
+                    |handler: web::Data<Handler<Arc<DB>>>, req: actix_web::HttpRequest, path: web::Path<String>| async move {
+                        handler.redirect(req, path).await
                     },
                 ),
             )

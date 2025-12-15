@@ -36,7 +36,7 @@ export default async function Home() {
 
         <footer className="mt-8 text-center text-xs">
           <Link
-            href="/terms"
+            href="/pages/terms"
             className="text-muted-foreground hover:text-foreground underline underline-offset-2"
           >
             利用規約
