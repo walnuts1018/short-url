@@ -45,7 +45,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_ENDPOINT: http://localhost:8080
+      NEXT_PUBLIC_API_ENDPOINT: http://server:8080
+      API_ENDPOINT: http://server:8080
     depends_on:
       - server
 
