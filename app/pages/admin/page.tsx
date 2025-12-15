@@ -1,18 +1,12 @@
 /* eslint-disable import/no-default-export */
 
 import Link from "next/link";
+import { ClientDateTime } from "./_components/client-datetime";
 import {
   disableLinkAction,
   listAdminLinks,
   restoreLinkAction,
 } from "./_actions/admin";
-
-function formatDateTime(value: string | null): string {
-  if (!value) return "-";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleString();
-}
 
 export default async function AdminPage(props: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -97,7 +91,7 @@ export default async function AdminPage(props: {
                         <td className="px-3 py-2">
                           <Link href={detailHref} className="block">
                             <div className="text-muted-foreground text-xs">
-                              {formatDateTime(l.created_at)}
+                              <ClientDateTime value={l.created_at} />
                             </div>
                           </Link>
                         </td>
@@ -125,7 +119,7 @@ export default async function AdminPage(props: {
                         <td className="px-3 py-2">
                           <Link href={detailHref} className="block">
                             <div className="text-muted-foreground text-xs">
-                              {formatDateTime(l.last_access_at)}
+                              <ClientDateTime value={l.last_access_at} />
                             </div>
                           </Link>
                         </td>

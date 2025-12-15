@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { listAdminAccessLogs } from "../_actions/admin";
-
-function formatDateTime(value: string): string {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleString();
-}
+import { ClientDateTime } from "../_components/client-datetime";
 
 export default async function AdminAccessLogsPage(props: {
   params: Promise<{ id: string }>;
@@ -73,7 +68,7 @@ export default async function AdminAccessLogsPage(props: {
                       >
                         <td className="px-3 py-2">
                           <div className="text-muted-foreground text-xs">
-                            {formatDateTime(l.ts)}
+                            <ClientDateTime value={l.ts} />
                           </div>
                         </td>
                         <td className="px-3 py-2">
