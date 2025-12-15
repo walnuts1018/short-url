@@ -1,7 +1,7 @@
 /* eslint-disable import/no-default-export */
 
 import type { Metadata } from "next";
-import { Nunito, Noto_Sans_JP } from "next/font/google";
+import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -9,12 +9,6 @@ const defaultTitle = "短縮URL waln.uk";
 const defaultDescription =
   "waln.ukは、シンプルで使いやすいURL短縮サービスです。";
 const url = "https://waln.uk";
-
-const NunitoFont = Nunito({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-Nunito",
-});
 
 const NotoFont = Noto_Sans_JP({
   subsets: ["latin"],
@@ -79,7 +73,7 @@ export default function RootLayout({
           content="https://waln.uk/opengraph-image.jpg"
         />
       </head>
-      <body className={`${NunitoFont.variable} ${NotoFont.variable}`}>
+      <body className={`${NotoFont.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>
