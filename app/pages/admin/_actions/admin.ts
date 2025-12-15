@@ -41,7 +41,10 @@ function getApiEndpoint(): string {
   );
 }
 
-async function backendFetch(path: string, init?: RequestInit): Promise<Response> {
+async function backendFetch(
+  path: string,
+  init?: RequestInit
+): Promise<Response> {
   const base = getApiEndpoint();
   const url = new URL(path, base).toString();
 
@@ -73,7 +76,9 @@ export async function listAdminLinks(args?: {
     params.set("page_state", pageState);
   }
 
-  const path = params.size ? `/api/v1/admin/links?${params.toString()}` : "/api/v1/admin/links";
+  const path = params.size
+    ? `/api/v1/admin/links?${params.toString()}`
+    : "/api/v1/admin/links";
   const res = await backendFetch(path, { method: "GET" });
   if (!res.ok) {
     const msg = (await res.text().catch(() => "")) || "Failed to list links";
@@ -102,7 +107,8 @@ export async function listAdminAccessLogs(
   const path = params.size ? `${basePath}?${params.toString()}` : basePath;
   const res = await backendFetch(path, { method: "GET" });
   if (!res.ok) {
-    const msg = (await res.text().catch(() => "")) || "Failed to list access logs";
+    const msg =
+      (await res.text().catch(() => "")) || "Failed to list access logs";
     throw new Error(msg);
   }
 
@@ -114,9 +120,12 @@ export async function disableLinkAction(formData: FormData): Promise<void> {
   const id = (typeof rawId === "string" ? rawId : "").trim();
   if (!id) return;
 
-  const res = await backendFetch(`/api/v1/admin/links/${encodeURIComponent(id)}/disable`, {
-    method: "POST",
-  });
+  const res = await backendFetch(
+    `/api/v1/admin/links/${encodeURIComponent(id)}/disable`,
+    {
+      method: "POST",
+    }
+  );
   if (!res.ok) {
     const msg = (await res.text().catch(() => "")) || "Failed to disable";
     throw new Error(msg);
@@ -130,9 +139,12 @@ export async function restoreLinkAction(formData: FormData): Promise<void> {
   const id = (typeof rawId === "string" ? rawId : "").trim();
   if (!id) return;
 
-  const res = await backendFetch(`/api/v1/admin/links/${encodeURIComponent(id)}/restore`, {
-    method: "POST",
-  });
+  const res = await backendFetch(
+    `/api/v1/admin/links/${encodeURIComponent(id)}/restore`,
+    {
+      method: "POST",
+    }
+  );
   if (!res.ok) {
     const msg = (await res.text().catch(() => "")) || "Failed to restore";
     throw new Error(msg);
