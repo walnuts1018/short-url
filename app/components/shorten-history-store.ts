@@ -5,11 +5,16 @@ export type ShortenHistoryItem = {
   createdAt: number;
 };
 
+export type ShortenHistorySnapshot = ShortenHistoryItem[] | null;
+
 const SHORTEN_HISTORY_STORAGE_KEY_V1 = "short-url:history:v1";
 const SHORTEN_HISTORY_STORAGE_KEY_V2 = "short-url:history:v2";
 const MAX_HISTORY_ITEMS = 20;
 
 export const SHORTEN_HISTORY_UPDATED_EVENT = "short-url:history-updated";
+
+let cachedHistoryKey: string | null | undefined;
+let cachedHistorySnapshot: ShortenHistoryItem[] = [];
 
 function normalizeShortPath(value: string): string | null {
   if (!value) return null;
@@ -109,5 +114,55 @@ export function clearShortenHistory() {
 }
 
 export function isShortenHistoryStorageKey(key: string | null) {
-  return key === SHORTEN_HISTORY_STORAGE_KEY_V1 || key === SHORTEN_HISTORY_STORAGE_KEY_V2;
+  return (
+    key === SHORTEN_HISTORY_STORAGE_KEY_V1 || key === SHORTEN_HISTORY_STORAGE_KEY_V2
+  );
+}
+
+export function getShortenHistorySnapshot(): ShortenHistorySnapshot {
+  if (typeof window === "undefined") return null;
+
+  const rawV2 = window.localStorage.getItem(SHORTEN_HISTORY_STORAGE_KEY_V2);
+  const rawV1 = rawV2
+    ? null
+    : window.localStorage.getItem(SHORTEN_HISTORY_STORAGE_KEY_V1);
+  const raw = rawV2 ?? rawV1;
+
+  const key = rawV2 ? `v2:${rawV2}` : raw ? `v1:${raw}` : null;
+
+  if (key === cachedHistoryKey) {
+    return cachedHistorySnapshot;
+  }
+
+  cachedHistoryKey = key;
+  cachedHistorySnapshot = loadShortenHistory();
+
+  // loadShortenHistory may migrate v1 -> v2; refresh the key once.
+  const migratedRawV2 = window.localStorage.getItem(SHORTEN_HISTORY_STORAGE_KEY_V2);
+  if (migratedRawV2) {
+    cachedHistoryKey = `v2:${migratedRawV2}`;
+  }
+
+  return cachedHistorySnapshot;
+}
+
+export function getShortenHistoryServerSnapshot(): ShortenHistorySnapshot {
+  // Server snapshot: force deterministic output to prevent hydration mismatch.
+  return null;
+}
+
+export function subscribeShortenHistory(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") return () => { };
+
+  const onStorage = (e: StorageEvent) => {
+    if (isShortenHistoryStorageKey(e.key)) onStoreChange();
+  };
+
+  window.addEventListener(SHORTEN_HISTORY_UPDATED_EVENT, onStoreChange);
+  window.addEventListener("storage", onStorage);
+
+  return () => {
+    window.removeEventListener(SHORTEN_HISTORY_UPDATED_EVENT, onStoreChange);
+    window.removeEventListener("storage", onStorage);
+  };
 }

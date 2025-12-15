@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MdClose } from "react-icons/md";
@@ -8,11 +8,10 @@ import { MdClose } from "react-icons/md";
 import { CopyButton } from "./copy-button";
 import {
   clearShortenHistory,
-  isShortenHistoryStorageKey,
-  loadShortenHistory,
+  getShortenHistoryServerSnapshot,
+  getShortenHistorySnapshot,
   removeShortenHistoryItem,
-  SHORTEN_HISTORY_UPDATED_EVENT,
-  type ShortenHistoryItem,
+  subscribeShortenHistory,
 } from "./shorten-history-store";
 
 import {
@@ -38,24 +37,11 @@ export function ShortenHistorySection({
 }) {
   const { t } = useTranslation();
   const [clearAllConfirmOpen, setClearAllConfirmOpen] = useState(false);
-  const [history, setHistory] = useState<ShortenHistoryItem[] | null>(null);
-
-  useEffect(() => {
-    const reload = () => setHistory(loadShortenHistory());
-    const onStorage = (e: StorageEvent) => {
-      if (isShortenHistoryStorageKey(e.key)) reload();
-    };
-
-    reload();
-
-    window.addEventListener(SHORTEN_HISTORY_UPDATED_EVENT, reload);
-    window.addEventListener("storage", onStorage);
-
-    return () => {
-      window.removeEventListener(SHORTEN_HISTORY_UPDATED_EVENT, reload);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, []);
+  const history = useSyncExternalStore(
+    subscribeShortenHistory,
+    getShortenHistorySnapshot,
+    getShortenHistoryServerSnapshot
+  );
 
   if (history === null) {
     return (
