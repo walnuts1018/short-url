@@ -26,6 +26,7 @@ RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
 RUN --mount=type=bind,source=app,target=app \
     --mount=type=bind,source=components,target=components \
+    --mount=type=bind,source=lib,target=lib \
     --mount=type=bind,source=next.config.ts,target=next.config.ts \
     --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=pnpm-lock.yaml,target=pnpm-lock.yaml \
