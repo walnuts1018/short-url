@@ -41,6 +41,13 @@ export default async function Home() {
           >
             利用規約
           </Link>
+          <span className="text-muted-foreground mx-2">/</span>
+          <Link
+            href="/pages/privacy"
+            className="text-muted-foreground hover:text-foreground underline underline-offset-2"
+          >
+            プライバシーポリシー
+          </Link>
         </footer>
       </div>
     </div>
