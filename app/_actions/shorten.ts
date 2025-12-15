@@ -119,6 +119,16 @@ export async function shortenAction(
     const ua = incoming.get("user-agent");
     if (ua) outgoing.set("user-agent", ua);
 
+    const cfConnectingIp = incoming.get("cf-connecting-ip")?.trim();
+    const xForwardedFor = incoming.get("x-forwarded-for")?.trim();
+    const xRealIp = incoming.get("x-real-ip")?.trim();
+    const forwardedIp =
+      cfConnectingIp ||
+      xForwardedFor?.split(",").map((s) => s.trim()).filter(Boolean)[0] ||
+      xRealIp ||
+      "";
+    if (forwardedIp) outgoing.set("cf-connecting-ip", forwardedIp);
+
     res = await fetch(endpoint.toString(), {
       method: "POST",
       headers: outgoing,

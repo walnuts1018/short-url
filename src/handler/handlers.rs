@@ -52,9 +52,34 @@ impl<T: ShortenedURLRepository> Handler<T> {
 
     fn extract_request_meta(req: &HttpRequest) -> (Option<String>, Option<String>, Option<String>) {
         let ip = req
-            .connection_info()
-            .realip_remote_addr()
-            .map(|s| s.to_string());
+            .headers()
+            .get("cf-connecting-ip")
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .or_else(|| {
+                req.headers()
+                    .get("x-forwarded-for")
+                    .and_then(|v| v.to_str().ok())
+                    .and_then(|s| s.split(',').next())
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                    .map(|s| s.to_string())
+            })
+            .or_else(|| {
+                req.headers()
+                    .get("x-real-ip")
+                    .and_then(|v| v.to_str().ok())
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                    .map(|s| s.to_string())
+            })
+            .or_else(|| {
+                req.connection_info()
+                    .realip_remote_addr()
+                    .map(|s| s.to_string())
+            });
         let user_agent = req
             .headers()
             .get(actix_web::http::header::USER_AGENT)
@@ -337,7 +362,9 @@ impl<T: ShortenedURLRepository> Handler<T> {
         let id = path.into_inner();
         let id = id.trim();
         if id.is_empty() {
-            return Err(HandlerError::ParamError("The 'id' parameter is required.".to_string()));
+            return Err(HandlerError::ParamError(
+                "The 'id' parameter is required.".to_string(),
+            ));
         }
 
         // Ensure the link exists.

@@ -55,6 +55,20 @@ async function backendFetch(
     outgoing.set("user-agent", ua);
   }
 
+  // Forward client IP to backend.
+  // Prefer Cloudflare's cf-connecting-ip; otherwise fall back to x-forwarded-for/x-real-ip.
+  const cfConnectingIp = incoming.get("cf-connecting-ip")?.trim();
+  const xForwardedFor = incoming.get("x-forwarded-for")?.trim();
+  const xRealIp = incoming.get("x-real-ip")?.trim();
+  const forwardedIp =
+    cfConnectingIp ||
+    xForwardedFor?.split(",").map((s) => s.trim()).filter(Boolean)[0] ||
+    xRealIp ||
+    "";
+  if (forwardedIp && !outgoing.has("cf-connecting-ip")) {
+    outgoing.set("cf-connecting-ip", forwardedIp);
+  }
+
   return fetch(url, {
     ...init,
     cache: "no-store",

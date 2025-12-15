@@ -40,7 +40,7 @@ export default async function AdminPage(props: {
             短縮リンク管理
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            作成日時の新しい順に表示します（ページングあり）。
+            作成日時の新しい順に表示します。
           </p>
         </header>
 
