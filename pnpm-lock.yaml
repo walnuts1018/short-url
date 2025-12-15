@@ -49,7 +49,7 @@ importers:
         specifier: github:hatena/eslint-config-hatena#v3.3.0
         version: https://codeload.github.com/hatena/eslint-config-hatena/tar.gz/53f846e7210efee39c6db210ece1d7005076b7d6(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       '@tailwindcss/postcss':
-        specifier: ^4
+        specifier: ^4.1.18
         version: 4.1.18
       '@types/node':
         specifier: ^20
@@ -73,7 +73,7 @@ importers:
         specifier: ^0.6.14
         version: 0.6.14(prettier@3.7.4)
       tailwindcss:
-        specifier: ^4
+        specifier: ^4.1.18
         version: 4.1.18
       tw-animate-css:
         specifier: ^1.4.0
