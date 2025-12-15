@@ -2,7 +2,6 @@ use crate::{
     domain::{id::ID, models::ShortenedURL, repository::ShortenedURLRepository},
     scylla::config::Config,
 };
-use actix_web::cookie::time::Date;
 use anyhow::{Ok, Result, anyhow};
 use backon::ExponentialBuilder;
 use backon::Retryable;
