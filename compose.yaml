@@ -19,7 +19,7 @@ services:
         - action: rebuild
           path: .
   scylladb:
-    image: scylladb/scylla:2025.3.3
+    image: scylladb/scylla:2025.3.5
     command: "--smp 1 --memory 256M"
     ports:
       - "9042:9042"
@@ -27,7 +27,7 @@ services:
       - scylla_data:/var/lib/scylla
 
   scylladb-create-keyspace:
-    image: scylladb/scylla:2025.3.3
+    image: scylladb/scylla:2025.3.5
     volumes:
       - ./scylla/initdb.sh:/scylla_scripts/initdb.sh
     entrypoint: [ "bash", "/scylla_scripts/initdb.sh" ]
