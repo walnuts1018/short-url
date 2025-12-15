@@ -1,62 +1,62 @@
 {
-    "app": {
-        "brand": "waln.uk",
-        "homeTitle": "短縮URL作成"
-    },
-    "form": {
-        "labelUrl": "URL",
-        "placeholderUrl": "https://example.com/...",
-        "submit": "短縮する",
-        "submitting": "処理中…",
-        "validation": {
-            "required": "URLを入力してください",
-            "httpsOnly": "https:// のURLのみ対応しています",
-            "domainInvalid": "ドメイン名が正しくありません",
-            "invalid": "URLの形式が正しくありません"
-        }
-    },
-    "toast": {
-        "errorTitle": "短縮できませんでした",
-        "inputErrorTitle": "入力を確認してください",
-        "copiedTitle": "コピーしました",
-        "copiedMessage": "クリップボードにコピーしました。",
-        "close": "閉じる"
-    },
-    "dialog": {
-        "successTitle": "短縮しました！",
-        "successDescription": "生成されたURLをコピーしてお使いください。",
-        "originalUrlLabel": "元URL (リンク先)",
-        "shortUrlLabel": "短縮URL",
-        "open": "開く",
-        "close": "閉じる",
-        "copy": "コピー"
-    },
-    "copy": {
-        "ariaLabel": "コピー",
-        "failedTitle": "コピーできませんでした",
-        "failedDescription": "お使いのブラウザ設定により、クリップボードへの書き込みが拒否されました。下のリンクを手動でコピーしてください。"
-    },
-    "share": {
-        "label": "シェア",
-        "x": "X",
-        "line": "LINE",
-        "hatebu": "はてなブックマーク",
-        "shareText": "短縮URLサービス「waln.uk」を使ってみて！",
-        "promptTitle": "シェアしませんか？",
-        "promptDescription": "よろしければ、短縮URLサービス「waln.uk」をシェアしてください！",
-        "notNow": "今はしない"
-    },
-    "history": {
-        "title": "作成履歴",
-        "empty": "まだ作成されたURLはありません。",
-        "destinationLabel": "リンク先",
-        "clearAll": "全て削除",
-        "clearAllConfirmTitle": "履歴を全て削除しますか？",
-        "clearAllConfirmDescription": "履歴を削除しても、短縮URL自体は有効のままです。",
-        "cancel": "キャンセル",
-        "confirm": "削除する",
-        "deleteAria": "履歴から削除",
-        "deletedToastTitle": "履歴から削除しました",
-        "clearedToastTitle": "履歴を全て削除しました"
+  "app": {
+    "brand": "waln.uk",
+    "homeTitle": "短縮URL作成"
+  },
+  "form": {
+    "labelUrl": "URL",
+    "placeholderUrl": "https://example.com/...",
+    "submit": "短縮する",
+    "submitting": "処理中…",
+    "validation": {
+      "required": "URLを入力してください",
+      "httpsOnly": "https:// のURLのみ対応しています",
+      "domainInvalid": "ドメイン名が正しくありません",
+      "invalid": "URLの形式が正しくありません"
     }
+  },
+  "toast": {
+    "errorTitle": "短縮できませんでした",
+    "inputErrorTitle": "入力を確認してください",
+    "copiedTitle": "コピーしました",
+    "copiedMessage": "クリップボードにコピーしました。",
+    "close": "閉じる"
+  },
+  "dialog": {
+    "successTitle": "短縮しました！",
+    "successDescription": "生成されたURLをコピーしてお使いください。",
+    "originalUrlLabel": "元URL (リンク先)",
+    "shortUrlLabel": "短縮URL",
+    "open": "開く",
+    "close": "閉じる",
+    "copy": "コピー"
+  },
+  "copy": {
+    "ariaLabel": "コピー",
+    "failedTitle": "コピーできませんでした",
+    "failedDescription": "お使いのブラウザ設定により、クリップボードへの書き込みが拒否されました。下のリンクを手動でコピーしてください。"
+  },
+  "share": {
+    "label": "シェア",
+    "x": "X",
+    "line": "LINE",
+    "hatebu": "はてなブックマーク",
+    "shareText": "短縮URLサービス「waln.uk」を使ってみて！",
+    "promptTitle": "シェアしませんか？",
+    "promptDescription": "よろしければ、短縮URLサービス「waln.uk」をシェアしてください！",
+    "notNow": "今はしない"
+  },
+  "history": {
+    "title": "作成履歴",
+    "empty": "まだ作成されたURLはありません。",
+    "destinationLabel": "リンク先",
+    "clearAll": "全て削除",
+    "clearAllConfirmTitle": "履歴を全て削除しますか？",
+    "clearAllConfirmDescription": "履歴を削除しても、短縮URL自体は有効のままです。",
+    "cancel": "キャンセル",
+    "confirm": "削除する",
+    "deleteAria": "履歴から削除",
+    "deletedToastTitle": "履歴から削除しました",
+    "clearedToastTitle": "履歴を全て削除しました"
+  }
 }

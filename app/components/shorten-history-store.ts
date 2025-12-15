@@ -42,7 +42,9 @@ export function loadShortenHistory(): ShortenHistoryItem[] {
     const mapped = parsed
       .map((item): ShortenHistoryItem | null => {
         if (!item || typeof item !== "object") return null;
-        const maybe = item as Partial<ShortenHistoryItem & { shortUrl?: string }>;
+        const maybe = item as Partial<
+          ShortenHistoryItem & { shortUrl?: string }
+        >;
 
         const id = typeof maybe.id === "string" ? maybe.id : null;
         const createdAt =
@@ -115,7 +117,8 @@ export function clearShortenHistory() {
 
 export function isShortenHistoryStorageKey(key: string | null) {
   return (
-    key === SHORTEN_HISTORY_STORAGE_KEY_V1 || key === SHORTEN_HISTORY_STORAGE_KEY_V2
+    key === SHORTEN_HISTORY_STORAGE_KEY_V1 ||
+    key === SHORTEN_HISTORY_STORAGE_KEY_V2
   );
 }
 
@@ -138,7 +141,9 @@ export function getShortenHistorySnapshot(): ShortenHistorySnapshot {
   cachedHistorySnapshot = loadShortenHistory();
 
   // loadShortenHistory may migrate v1 -> v2; refresh the key once.
-  const migratedRawV2 = window.localStorage.getItem(SHORTEN_HISTORY_STORAGE_KEY_V2);
+  const migratedRawV2 = window.localStorage.getItem(
+    SHORTEN_HISTORY_STORAGE_KEY_V2
+  );
   if (migratedRawV2) {
     cachedHistoryKey = `v2:${migratedRawV2}`;
   }
@@ -152,7 +157,7 @@ export function getShortenHistoryServerSnapshot(): ShortenHistorySnapshot {
 }
 
 export function subscribeShortenHistory(onStoreChange: () => void): () => void {
-  if (typeof window === "undefined") return () => { };
+  if (typeof window === "undefined") return () => {};
 
   const onStorage = (e: StorageEvent) => {
     if (isShortenHistoryStorageKey(e.key)) onStoreChange();
