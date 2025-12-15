@@ -2,7 +2,7 @@ services:
   server:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.backend
     working_dir: /app
     ports:
       - "8080:8080"
@@ -30,7 +30,7 @@ services:
     image: scylladb/scylla:2025.3.5
     volumes:
       - ./scylla/initdb.sh:/scylla_scripts/initdb.sh
-    entrypoint: ["bash", "/scylla_scripts/initdb.sh"]
+    entrypoint: [ "bash", "/scylla_scripts/initdb.sh" ]
     environment:
       ENDPOINT: scylladb
       USER_NAME: cassandra

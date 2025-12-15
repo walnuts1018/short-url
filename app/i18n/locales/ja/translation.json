@@ -25,6 +25,7 @@
     "dialog": {
         "successTitle": "短縮しました！",
         "successDescription": "生成されたURLをコピーしてお使いください。",
+        "originalUrlLabel": "元URL (リンク先)",
         "shortUrlLabel": "短縮URL",
         "open": "開く",
         "close": "閉じる",
@@ -34,5 +35,18 @@
         "ariaLabel": "コピー",
         "failedTitle": "コピーできませんでした",
         "failedDescription": "お使いのブラウザ設定により、クリップボードへの書き込みが拒否されました。下のリンクを手動でコピーしてください。"
+    },
+    "history": {
+        "title": "作成履歴",
+        "empty": "まだ作成されたURLはありません。",
+        "destinationLabel": "リンク先",
+        "clearAll": "全て削除",
+        "clearAllConfirmTitle": "履歴を全て削除しますか？",
+        "clearAllConfirmDescription": "この操作は取り消せません。",
+        "cancel": "キャンセル",
+        "confirm": "削除する",
+        "deleteAria": "履歴から削除",
+        "deletedToastTitle": "履歴から削除しました",
+        "clearedToastTitle": "履歴を全て削除しました"
     }
 }

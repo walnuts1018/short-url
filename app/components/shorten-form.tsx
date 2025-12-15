@@ -25,6 +25,90 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
+type ShortenHistoryItem = {
+  id: string;
+  shortPath: string;
+  originalUrl: string;
+  createdAt: number;
+};
+
+const SHORTEN_HISTORY_STORAGE_KEY_V1 = "short-url:history:v1";
+const SHORTEN_HISTORY_STORAGE_KEY_V2 = "short-url:history:v2";
+const MAX_HISTORY_ITEMS = 20;
+
+function normalizeShortPath(value: string): string | null {
+  if (!value) return null;
+  if (value.startsWith("/")) return value;
+  try {
+    const u = new URL(value);
+    const path = u.pathname || "/";
+    return path.startsWith("/") ? path : `/${path}`;
+  } catch {
+    return null;
+  }
+}
+
+function loadShortenHistory(): ShortenHistoryItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const rawV2 = window.localStorage.getItem(SHORTEN_HISTORY_STORAGE_KEY_V2);
+    const rawV1 = window.localStorage.getItem(SHORTEN_HISTORY_STORAGE_KEY_V1);
+    const raw = rawV2 ?? rawV1;
+    if (!raw) return [];
+
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    const mapped = parsed
+      .map((item): ShortenHistoryItem | null => {
+        if (!item || typeof item !== "object") return null;
+        const maybe = item as Partial<
+          ShortenHistoryItem & { shortUrl?: string }
+        >;
+
+        const id = typeof maybe.id === "string" ? maybe.id : null;
+        const createdAt =
+          typeof maybe.createdAt === "number" ? maybe.createdAt : null;
+        const originalUrl =
+          typeof maybe.originalUrl === "string" ? maybe.originalUrl : "";
+
+        const shortPath =
+          typeof maybe.shortPath === "string"
+            ? normalizeShortPath(maybe.shortPath)
+            : typeof maybe.shortUrl === "string"
+              ? normalizeShortPath(maybe.shortUrl)
+              : null;
+
+        if (!id || createdAt === null || !shortPath) return null;
+        return { id, shortPath, originalUrl, createdAt };
+      })
+      .filter((v): v is ShortenHistoryItem => v !== null)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, MAX_HISTORY_ITEMS);
+
+    if (!rawV2 && mapped.length > 0) {
+      // Migrate v1 -> v2 once.
+      saveShortenHistory(mapped);
+    }
+
+    return mapped;
+  } catch {
+    return [];
+  }
+}
+
+function saveShortenHistory(items: ShortenHistoryItem[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      SHORTEN_HISTORY_STORAGE_KEY_V2,
+      JSON.stringify(items)
+    );
+  } catch {
+    // ignore
+  }
+}
+
 export function ShortenForm({
   defaultUrl,
   requestOrigin,
@@ -42,6 +126,7 @@ export function ShortenForm({
   const [url, setUrl] = useState(defaultUrl ?? "");
   const [touched, setTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const lastSubmittedNormalizedRef = useRef<string>("");
   const toastTimerRef = useRef<number | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
@@ -51,6 +136,11 @@ export function ShortenForm({
   const [toastTitle, setToastTitle] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string>("");
   const [successOpen, setSuccessOpen] = useState(false);
+  const [lastOriginalUrl, setLastOriginalUrl] = useState<string>("");
+  const [clearAllConfirmOpen, setClearAllConfirmOpen] = useState(false);
+  const [history, setHistory] = useState<ShortenHistoryItem[]>(() =>
+    loadShortenHistory()
+  );
 
   const validation = useMemo(() => {
     const value = url.trim();
@@ -175,6 +265,23 @@ export function ShortenForm({
 
   useEffect(() => {
     if (state.status === "success") {
+      const submittedOriginal = lastSubmittedNormalizedRef.current;
+      setLastOriginalUrl(submittedOriginal);
+      const newItem: ShortenHistoryItem = {
+        id: state.id,
+        shortPath: `/${state.id}`,
+        originalUrl: submittedOriginal,
+        createdAt: Date.now(),
+      };
+
+      setHistory((prev) => {
+        const next = [newItem, ...prev.filter((item) => item.id !== newItem.id)]
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .slice(0, MAX_HISTORY_ITEMS);
+        saveShortenHistory(next);
+        return next;
+      });
+
       setSuccessOpen(true);
       setSubmitted(false);
       setTouched(false);
@@ -206,7 +313,10 @@ export function ShortenForm({
             message: errorMessage,
             durationMs: 4500,
           });
+          return;
         }
+
+        lastSubmittedNormalizedRef.current = normalized ?? "";
       }}
     >
       <div className="grid gap-2">
@@ -265,7 +375,23 @@ export function ShortenForm({
           </DialogHeader>
 
           {shortUrl ? (
-            <div className="grid gap-2">
+            <div className="grid gap-4">
+              {lastOriginalUrl ? (
+                <div className="grid gap-2">
+                  <p className="text-foreground/80 text-sm font-medium">
+                    {t("dialog.originalUrlLabel")}
+                  </p>
+                  <a
+                    href={lastOriginalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border-input bg-background text-foreground hover:bg-secondary focus-visible:ring-ring block w-full rounded-xl border px-3 py-2 text-sm break-all transition focus-visible:ring-2 focus-visible:outline-none"
+                  >
+                    {lastOriginalUrl}
+                  </a>
+                </div>
+              ) : null}
+
               <label
                 htmlFor="short-url-result"
                 className="text-foreground/80 text-sm font-medium"
@@ -402,6 +528,150 @@ export function ShortenForm({
           )}
         </div>
       ) : null}
+
+      <div className="border-border/60 mt-6 grid gap-2 border-t pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-foreground text-sm font-semibold">
+            {t("history.title")}
+          </h2>
+
+          {history.length > 0 ? (
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex items-center justify-center rounded-md px-2 py-1 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
+              onClick={() => setClearAllConfirmOpen(true)}
+            >
+              {t("history.clearAll")}
+            </button>
+          ) : null}
+        </div>
+
+        {history.length === 0 ? (
+          <p className="text-muted-foreground text-sm">{t("history.empty")}</p>
+        ) : (
+          <ul className="grid gap-2">
+            {history.map((item) => (
+              <li
+                key={`${item.id}:${item.createdAt}`}
+                className="border-border/60 bg-secondary/30 relative overflow-visible rounded-2xl border px-4 py-3"
+              >
+                <button
+                  type="button"
+                  aria-label={t("history.deleteAria")}
+                  className="border-destructive/10 text-destructive/80 focus-visible:ring-ring absolute -top-2 -right-2 inline-flex size-7 items-center justify-center rounded-full border bg-red-50 shadow-sm transition focus-visible:ring-2 focus-visible:outline-none"
+                  onClick={() => {
+                    setHistory((prev) => {
+                      const next = prev.filter((x) => x.id !== item.id);
+                      saveShortenHistory(next);
+                      return next;
+                    });
+                    showToast({
+                      variant: "default",
+                      title: t("history.deletedToastTitle"),
+                      durationMs: 2200,
+                    });
+                  }}
+                >
+                  <MdClose className="size-4" aria-hidden />
+                </button>
+
+                <div className="grid gap-y-1">
+                  <div className="flex items-center gap-0">
+                    <a
+                      href={
+                        requestOrigin
+                          ? `${requestOrigin}${item.shortPath}`
+                          : item.shortPath
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-foreground min-w-0 flex-1 text-sm leading-5 font-semibold break-all underline underline-offset-2"
+                    >
+                      {requestOrigin
+                        ? `${requestOrigin}${item.shortPath}`
+                        : item.shortPath}
+                    </a>
+
+                    <CopyButton
+                      value={
+                        requestOrigin
+                          ? `${requestOrigin}${item.shortPath}`
+                          : item.shortPath
+                      }
+                      onCopied={() =>
+                        showToast({
+                          variant: "default",
+                          title: t("toast.copiedTitle"),
+                          message: t("toast.copiedMessage"),
+                          durationMs: 2500,
+                        })
+                      }
+                      className="hover:bg-secondary focus-visible:ring-ring shrink-0"
+                    />
+                  </div>
+
+                  {item.originalUrl ? (
+                    <div className="grid">
+                      <p className="text-foreground/70 text-xs font-medium">
+                        {t("history.destinationLabel")}
+                      </p>
+                      <a
+                        href={item.originalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground block text-sm break-all underline underline-offset-2"
+                      >
+                        {item.originalUrl}
+                      </a>
+                    </div>
+                  ) : null}
+
+                  <span className="text-muted-foreground text-right text-xs tabular-nums">
+                    {new Date(item.createdAt).toLocaleString("ja-JP")}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <Dialog open={clearAllConfirmOpen} onOpenChange={setClearAllConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("history.clearAllConfirmTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("history.clearAllConfirmDescription")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex flex-row justify-end gap-2">
+            <button
+              type="button"
+              className="border-border bg-card text-foreground hover:bg-secondary focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition focus-visible:ring-2 focus-visible:outline-none"
+              onClick={() => setClearAllConfirmOpen(false)}
+            >
+              {t("history.cancel")}
+            </button>
+            <button
+              type="button"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition focus-visible:ring-2 focus-visible:outline-none"
+              onClick={() => {
+                setHistory([]);
+                saveShortenHistory([]);
+                setClearAllConfirmOpen(false);
+                showToast({
+                  variant: "default",
+                  title: t("history.clearedToastTitle"),
+                  durationMs: 2500,
+                });
+              }}
+            >
+              {t("history.confirm")}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }
