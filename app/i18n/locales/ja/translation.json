@@ -1,0 +1,38 @@
+{
+    "app": {
+        "brand": "waln.uk",
+        "homeTitle": "短縮URL作成"
+    },
+    "form": {
+        "labelUrl": "URL",
+        "placeholderUrl": "https://example.com/...",
+        "submit": "短縮する",
+        "submitting": "処理中…",
+        "validation": {
+            "required": "URLを入力してください",
+            "httpsOnly": "https:// のURLのみ対応しています",
+            "domainInvalid": "ドメイン名が正しくありません",
+            "invalid": "URLの形式が正しくありません"
+        }
+    },
+    "toast": {
+        "errorTitle": "短縮できませんでした",
+        "inputErrorTitle": "入力を確認してください",
+        "copiedTitle": "コピーしました",
+        "copiedMessage": "クリップボードにコピーしました。",
+        "close": "閉じる"
+    },
+    "dialog": {
+        "successTitle": "短縮しました！",
+        "successDescription": "生成されたURLをコピーしてお使いください。",
+        "shortUrlLabel": "短縮URL",
+        "open": "開く",
+        "close": "閉じる",
+        "copy": "コピー"
+    },
+    "copy": {
+        "ariaLabel": "コピー",
+        "failedTitle": "コピーできませんでした",
+        "failedDescription": "お使いのブラウザ設定により、クリップボードへの書き込みが拒否されました。下のリンクを手動でコピーしてください。"
+    }
+}

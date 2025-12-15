@@ -1,9 +1,13 @@
+/* eslint-disable import/no-default-export */
+
 import type { Metadata } from "next";
 import { Nunito, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./providers";
 
 const defaultTitle = "短縮URL waln.uk";
-const defaultDescription = "waln.ukは、シンプルで使いやすいURL短縮サービスです。";
+const defaultDescription =
+  "waln.ukは、シンプルで使いやすいURL短縮サービスです。";
 const url = "https://waln.uk";
 
 const NunitoFont = Nunito({
@@ -63,12 +67,21 @@ export default function RootLayout({
     <html lang="ja">
       <head>
         <link rel="manifest" href="/favicons/site.webmanifest" />
-        <link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5" />
-        <meta name="msapplication-TileColor" content="#FF9F21" />
-        <meta name="theme-color" content="#FF9F21" />
-        <meta name="twitter:image" content="https://waln.uk/opengraph-image.jpg" />
+        <link
+          rel="mask-icon"
+          href="/favicons/safari-pinned-tab.svg"
+          color="#5bbad5"
+        />
+        <meta name="msapplication-TileColor" content="#94E5D2" />
+        <meta name="theme-color" content="#94E5D2" />
+        <meta
+          name="twitter:image"
+          content="https://waln.uk/opengraph-image.jpg"
+        />
       </head>
-      <body className={`${NunitoFont.variable} ${NotoFont.variable}`}>{children}</body>
+      <body className={`${NunitoFont.variable} ${NotoFont.variable}`}>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

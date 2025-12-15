@@ -2,6 +2,8 @@
  * @see https://prettier.io/docs/configuration
  * @type {import("prettier").Config}
  */
+/* eslint-disable import/no-default-export */
+
 const config = {
   trailingComma: "es5",
   semi: true,
