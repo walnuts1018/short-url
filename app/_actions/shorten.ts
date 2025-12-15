@@ -1,6 +1,7 @@
 "use server";
 
 import { domainToASCII } from "node:url";
+import { headers as nextHeaders } from "next/headers";
 
 type ShortenResponse = {
   id: string;
@@ -111,11 +112,16 @@ export async function shortenAction(
   const endpoint = new URL("/api/v1/shorten", getApiEndpoint());
   let res: Response;
   try {
+    const outgoing = new Headers({
+      "content-type": "application/json",
+    });
+    const incoming = await nextHeaders();
+    const ua = incoming.get("user-agent");
+    if (ua) outgoing.set("user-agent", ua);
+
     res = await fetch(endpoint.toString(), {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
+      headers: outgoing,
       body: JSON.stringify({ url }),
       cache: "no-store",
     });

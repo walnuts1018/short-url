@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers as nextHeaders } from "next/headers";
 
 export type AdminLinkListItem = {
   id: string;
@@ -43,12 +44,18 @@ function getApiEndpoint(): string {
 async function backendFetch(path: string, init?: RequestInit): Promise<Response> {
   const base = getApiEndpoint();
   const url = new URL(path, base).toString();
+
+  const outgoing = new Headers(init?.headers);
+  const incoming = await nextHeaders();
+  const ua = incoming.get("user-agent");
+  if (ua && !outgoing.has("user-agent")) {
+    outgoing.set("user-agent", ua);
+  }
+
   return fetch(url, {
     ...init,
     cache: "no-store",
-    headers: {
-      ...(init?.headers ?? {}),
-    },
+    headers: outgoing,
   });
 }
 
