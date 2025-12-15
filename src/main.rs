@@ -67,8 +67,16 @@ async fn main() -> std::io::Result<()> {
                         .route(
                             "",
                             web::get().to(
-                                |handler: web::Data<Handler<Arc<DB>>>| async move {
-                                    handler.admin_list_links().await
+                                |handler: web::Data<Handler<Arc<DB>>>, query| async move {
+                                    handler.admin_list_links(query).await
+                                },
+                            ),
+                        )
+                        .route(
+                            "/{id}/accesses",
+                            web::get().to(
+                                |handler: web::Data<Handler<Arc<DB>>>, path, query| async move {
+                                    handler.admin_list_access_logs(path, query).await
                                 },
                             ),
                         )

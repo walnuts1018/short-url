@@ -2,6 +2,7 @@ use actix_web::{
     HttpRequest, HttpResponse, Responder, ResponseError,
     web::{self, Redirect},
 };
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use url::Url;
@@ -98,6 +99,18 @@ impl<T: ShortenedURLRepository> Handler<T> {
 
         let (ip, user_agent, request_id) = Self::extract_request_meta(&req);
         let now = chrono::Utc::now();
+
+        // Best-effort: save creator meta (TTL=30d). Stored once per id.
+        let _ = self
+            .url_repo
+            .save_create_meta_if_absent(
+                shortened.id.0.as_str(),
+                shortened.created_at,
+                ip.as_deref(),
+                user_agent.as_deref(),
+                request_id.as_deref(),
+            )
+            .await;
 
         // Save to Scylla (TTL=30d) and also emit to stdout via tracing.
         let _ = self
@@ -215,10 +228,25 @@ impl<T: ShortenedURLRepository> Handler<T> {
         Ok(Redirect::to(url.original_url.to_string()).permanent())
     }
 
-    pub async fn admin_list_links(&self) -> Result<impl Responder + use<T>, HandlerError> {
-        let urls = self
+    pub async fn admin_list_links(
+        &self,
+        query: web::Query<AdminListQuery>,
+    ) -> Result<impl Responder + use<T>, HandlerError> {
+        let limit = query.limit.unwrap_or(20).clamp(1, 100);
+
+        let paging_state = match query.page_state.as_deref().map(str::trim) {
+            None | Some("") => None,
+            Some(token) => {
+                let decoded = URL_SAFE_NO_PAD
+                    .decode(token)
+                    .map_err(|_| HandlerError::ParamError("Invalid page_state".to_string()))?;
+                Some(decoded)
+            }
+        };
+
+        let (urls, next_page_state) = self
             .url_repo
-            .list_all()
+            .list_by_created_at_page(limit, paging_state)
             .await
             .map_err(|e| HandlerError::DBError(e.into()))?;
 
@@ -235,6 +263,21 @@ impl<T: ShortenedURLRepository> Handler<T> {
                 .get_last_access(&id)
                 .await
                 .map_err(|e| HandlerError::DBError(e.into()))?;
+            let create_meta = self
+                .url_repo
+                .get_create_meta(&id)
+                .await
+                .map_err(|e| HandlerError::DBError(e.into()))?;
+
+            let (creator_ip, creator_user_agent, creator_request_id) = match create_meta {
+                Some((_ts, ip, ua, rid)) => {
+                    let ip = (!ip.is_empty()).then_some(ip);
+                    let ua = (!ua.is_empty()).then_some(ua);
+                    let rid = (!rid.is_empty()).then_some(rid);
+                    (ip, ua, rid)
+                }
+                None => (None, None, None),
+            };
 
             items.push(AdminLinkListItem {
                 id: url.id,
@@ -244,17 +287,18 @@ impl<T: ShortenedURLRepository> Handler<T> {
                 enabled: state.as_ref().map(|s| s.enabled).unwrap_or(true),
                 disabled_at: state.and_then(|s| s.disabled_at),
                 last_access_at: last_access.map(|(ts, _)| ts),
+                creator_ip,
+                creator_user_agent,
+                creator_request_id,
             });
         }
 
-        items.sort_by(|a, b| match (a.last_access_at, b.last_access_at) {
-            (Some(at), Some(bt)) => bt.cmp(&at),
-            (Some(_), None) => std::cmp::Ordering::Less,
-            (None, Some(_)) => std::cmp::Ordering::Greater,
-            (None, None) => a.created_at.cmp(&b.created_at),
-        });
+        let next_page_state = next_page_state.map(|raw| URL_SAFE_NO_PAD.encode(raw));
 
-        Ok(web::Json(items))
+        Ok(web::Json(AdminLinkListResponse {
+            items,
+            next_page_state,
+        }))
     }
 
     pub async fn admin_get_link(
@@ -283,6 +327,51 @@ impl<T: ShortenedURLRepository> Handler<T> {
         };
 
         Ok(web::Json(view))
+    }
+
+    pub async fn admin_list_access_logs(
+        &self,
+        path: web::Path<String>,
+        query: web::Query<AdminAccessLogQuery>,
+    ) -> Result<impl Responder + use<T>, HandlerError> {
+        let id = path.into_inner();
+        let id = id.trim();
+        if id.is_empty() {
+            return Err(HandlerError::ParamError("The 'id' parameter is required.".to_string()));
+        }
+
+        // Ensure the link exists.
+        let url = self
+            .url_repo
+            .find_by_id(ID::new(id.to_string()))
+            .await
+            .map_err(|e| HandlerError::DBError(e.into()))?;
+        if url.is_none() {
+            return Err(HandlerError::NotFound);
+        }
+
+        let limit = query.limit.unwrap_or(100).clamp(1, 500);
+        let rows = self
+            .url_repo
+            .list_access_logs_recent(id, limit)
+            .await
+            .map_err(|e| HandlerError::DBError(e.into()))?;
+
+        let mut items = Vec::with_capacity(rows.len());
+        for (ts, ip, ua, rid, status_code) in rows {
+            let ip = (!ip.is_empty()).then_some(ip);
+            let ua = (!ua.is_empty()).then_some(ua);
+            let rid = (!rid.is_empty()).then_some(rid);
+            items.push(AdminAccessLogItem {
+                ts,
+                ip,
+                user_agent: ua,
+                request_id: rid,
+                status_code,
+            });
+        }
+
+        Ok(web::Json(AdminAccessLogResponse { items }))
     }
 
     pub async fn admin_disable(
@@ -321,6 +410,40 @@ pub struct AdminLinkListItem {
     pub enabled: bool,
     pub disabled_at: Option<chrono::DateTime<chrono::Utc>>,
     pub last_access_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub creator_ip: Option<String>,
+    pub creator_user_agent: Option<String>,
+    pub creator_request_id: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct AdminLinkListResponse {
+    pub items: Vec<AdminLinkListItem>,
+    pub next_page_state: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct AdminListQuery {
+    pub limit: Option<i32>,
+    pub page_state: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct AdminAccessLogQuery {
+    pub limit: Option<i32>,
+}
+
+#[derive(Serialize)]
+pub struct AdminAccessLogItem {
+    pub ts: chrono::DateTime<chrono::Utc>,
+    pub ip: Option<String>,
+    pub user_agent: Option<String>,
+    pub request_id: Option<String>,
+    pub status_code: i32,
+}
+
+#[derive(Serialize)]
+pub struct AdminAccessLogResponse {
+    pub items: Vec<AdminAccessLogItem>,
 }
 
 #[derive(Deserialize)]

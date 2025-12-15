@@ -19,7 +19,25 @@ pub trait ShortenedURLRepository {
         id: ID,
     ) -> impl std::future::Future<Output = Result<Option<ShortenedURL>>> + Send;
 
-    fn list_all(&self) -> impl std::future::Future<Output = Result<Vec<ShortenedURL>>> + Send;
+    fn list_by_created_at_page(
+        &self,
+        limit: i32,
+        paging_state: Option<Vec<u8>>,
+    ) -> impl std::future::Future<Output = Result<(Vec<ShortenedURL>, Option<Vec<u8>>)>> + Send;
+
+    fn save_create_meta_if_absent(
+        &self,
+        id: &str,
+        created_at: DateTime<Utc>,
+        ip: Option<&str>,
+        user_agent: Option<&str>,
+        request_id: Option<&str>,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
+
+    fn get_create_meta(
+        &self,
+        id: &str,
+    ) -> impl std::future::Future<Output = Result<Option<(DateTime<Utc>, String, String, String)>>> + Send;
 
     fn get_state(
         &self,
@@ -52,6 +70,13 @@ pub trait ShortenedURLRepository {
         request_id: Option<&str>,
         status_code: i32,
     ) -> impl std::future::Future<Output = Result<()>> + Send;
+
+    fn list_access_logs_recent(
+        &self,
+        id: &str,
+        limit: i32,
+    ) -> impl std::future::Future<Output = Result<Vec<(DateTime<Utc>, String, String, String, i32)>>>
+    + Send;
 
     fn get_last_access(
         &self,

@@ -14,8 +14,19 @@ function formatDateTime(value: string | null): string {
   return d.toLocaleString();
 }
 
-export default async function AdminPage() {
-  const links = await listAdminLinks();
+export default async function AdminPage(props: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  type SearchParams = Record<string, string | string[] | undefined>;
+  const searchParams = await Promise.resolve(
+    props.searchParams ?? ({} as SearchParams)
+  );
+  const rawPageState = searchParams.page_state;
+  const pageState = typeof rawPageState === "string" ? rawPageState : null;
+
+  const res = await listAdminLinks({ limit: 20, pageState });
+  const links = res.items;
+  const nextPageState = res.next_page_state;
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -29,7 +40,7 @@ export default async function AdminPage() {
             短縮リンク管理
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            最近アクセスがあった順に表示します（未アクセスは下）。
+            作成日時の新しい順に表示します（ページングあり）。
           </p>
         </header>
 
@@ -41,6 +52,8 @@ export default async function AdminPage() {
                   <tr className="border-border border-b text-left">
                     <th className="px-3 py-2 font-semibold">ID</th>
                     <th className="px-3 py-2 font-semibold">Original</th>
+                    <th className="px-3 py-2 font-semibold">Created</th>
+                    <th className="px-3 py-2 font-semibold">Creator</th>
                     <th className="px-3 py-2 font-semibold">Status</th>
                     <th className="px-3 py-2 font-semibold">Last access</th>
                     <th className="px-3 py-2 font-semibold">Actions</th>
@@ -49,6 +62,7 @@ export default async function AdminPage() {
                 <tbody>
                   {links.map((l) => {
                     const isEnabled = l.enabled;
+                    const detailHref = `/pages/admin/${encodeURIComponent(l.id)}`;
                     return (
                       <tr
                         key={l.id}
@@ -56,7 +70,12 @@ export default async function AdminPage() {
                       >
                         <td className="px-3 py-2 font-mono text-xs">
                           <div className="flex flex-col gap-1">
-                            <span>{l.id}</span>
+                            <Link
+                              href={detailHref}
+                              className="hover:text-foreground underline underline-offset-2"
+                            >
+                              {l.id}
+                            </Link>
                             <Link
                               href={`/${l.id}`}
                               className="text-muted-foreground hover:text-foreground underline underline-offset-2"
@@ -76,6 +95,23 @@ export default async function AdminPage() {
                           </a>
                         </td>
                         <td className="px-3 py-2">
+                          <Link href={detailHref} className="block">
+                            <div className="text-muted-foreground text-xs">
+                              {formatDateTime(l.created_at)}
+                            </div>
+                          </Link>
+                        </td>
+                        <td className="px-3 py-2">
+                          <Link href={detailHref} className="block">
+                            <div className="text-muted-foreground text-xs">
+                              <div>{l.creator_ip || "-"}</div>
+                              <div className="break-all">
+                                {l.creator_user_agent || "-"}
+                              </div>
+                            </div>
+                          </Link>
+                        </td>
+                        <td className="px-3 py-2">
                           <span
                             className={
                               isEnabled
@@ -87,9 +123,11 @@ export default async function AdminPage() {
                           </span>
                         </td>
                         <td className="px-3 py-2">
-                          <div className="text-muted-foreground text-xs">
-                            {formatDateTime(l.last_access_at)}
-                          </div>
+                          <Link href={detailHref} className="block">
+                            <div className="text-muted-foreground text-xs">
+                              {formatDateTime(l.last_access_at)}
+                            </div>
+                          </Link>
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex flex-wrap gap-2">
@@ -120,6 +158,29 @@ export default async function AdminPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            <div className="mt-4 flex items-center gap-3">
+              {pageState ? (
+                <Link
+                  href="/pages/admin"
+                  className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2"
+                >
+                  先頭へ
+                </Link>
+              ) : null}
+              {nextPageState ? (
+                <Link
+                  href={`/pages/admin?page_state=${encodeURIComponent(nextPageState)}`}
+                  className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2"
+                >
+                  次へ
+                </Link>
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  これ以上ありません
+                </span>
+              )}
             </div>
           </section>
         </main>

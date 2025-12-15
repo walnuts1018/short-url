@@ -10,6 +10,26 @@ export type AdminLinkListItem = {
   enabled: boolean;
   disabled_at: string | null;
   last_access_at: string | null;
+  creator_ip: string | null;
+  creator_user_agent: string | null;
+  creator_request_id: string | null;
+};
+
+export type AdminLinkListResponse = {
+  items: AdminLinkListItem[];
+  next_page_state: string | null;
+};
+
+export type AdminAccessLogItem = {
+  ts: string;
+  ip: string | null;
+  user_agent: string | null;
+  request_id: string | null;
+  status_code: number;
+};
+
+export type AdminAccessLogResponse = {
+  items: AdminAccessLogItem[];
 };
 
 function getApiEndpoint(): string {
@@ -32,15 +52,54 @@ async function backendFetch(path: string, init?: RequestInit): Promise<Response>
   });
 }
 
-export async function listAdminLinks(): Promise<AdminLinkListItem[]> {
-  const res = await backendFetch("/api/v1/admin/links", {
-    method: "GET",
-  });
+export async function listAdminLinks(args?: {
+  limit?: number;
+  pageState?: string | null;
+}): Promise<AdminLinkListResponse> {
+  const params = new URLSearchParams();
+  const limit = args?.limit;
+  if (typeof limit === "number" && Number.isFinite(limit)) {
+    params.set("limit", String(Math.max(1, Math.min(100, Math.floor(limit)))));
+  }
+  const pageState = args?.pageState;
+  if (typeof pageState === "string" && pageState.trim() !== "") {
+    params.set("page_state", pageState);
+  }
+
+  const path = params.size ? `/api/v1/admin/links?${params.toString()}` : "/api/v1/admin/links";
+  const res = await backendFetch(path, { method: "GET" });
   if (!res.ok) {
     const msg = (await res.text().catch(() => "")) || "Failed to list links";
     throw new Error(msg);
   }
-  return (await res.json()) as AdminLinkListItem[];
+
+  return (await res.json()) as AdminLinkListResponse;
+}
+
+export async function listAdminAccessLogs(
+  id: string,
+  args?: { limit?: number }
+): Promise<AdminAccessLogResponse> {
+  const safeId = (id ?? "").trim();
+  if (!safeId) {
+    throw new Error("Missing id");
+  }
+
+  const params = new URLSearchParams();
+  const limit = args?.limit;
+  if (typeof limit === "number" && Number.isFinite(limit)) {
+    params.set("limit", String(Math.max(1, Math.min(500, Math.floor(limit)))));
+  }
+
+  const basePath = `/api/v1/admin/links/${encodeURIComponent(safeId)}/accesses`;
+  const path = params.size ? `${basePath}?${params.toString()}` : basePath;
+  const res = await backendFetch(path, { method: "GET" });
+  if (!res.ok) {
+    const msg = (await res.text().catch(() => "")) || "Failed to list access logs";
+    throw new Error(msg);
+  }
+
+  return (await res.json()) as AdminAccessLogResponse;
 }
 
 export async function disableLinkAction(formData: FormData): Promise<void> {
@@ -56,7 +115,7 @@ export async function disableLinkAction(formData: FormData): Promise<void> {
     throw new Error(msg);
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/pages/admin");
 }
 
 export async function restoreLinkAction(formData: FormData): Promise<void> {
@@ -72,5 +131,5 @@ export async function restoreLinkAction(formData: FormData): Promise<void> {
     throw new Error(msg);
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/pages/admin");
 }

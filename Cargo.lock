@@ -2068,6 +2068,7 @@ dependencies = [
  "actix-web",
  "anyhow",
  "backon",
+ "base64",
  "chrono",
  "const_format",
  "envconfig",
