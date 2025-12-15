@@ -375,23 +375,7 @@ export function ShortenForm({
           </DialogHeader>
 
           {shortUrl ? (
-            <div className="grid gap-4">
-              {lastOriginalUrl ? (
-                <div className="grid gap-2">
-                  <p className="text-foreground/80 text-sm font-medium">
-                    {t("dialog.originalUrlLabel")}
-                  </p>
-                  <a
-                    href={lastOriginalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="border-input bg-background text-foreground hover:bg-secondary focus-visible:ring-ring block w-full rounded-xl border px-3 py-2 text-sm break-all transition focus-visible:ring-2 focus-visible:outline-none"
-                  >
-                    {lastOriginalUrl}
-                  </a>
-                </div>
-              ) : null}
-
+            <div className="grid gap-2">
               <label
                 htmlFor="short-url-result"
                 className="text-foreground/80 text-sm font-medium"
