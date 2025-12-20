@@ -139,7 +139,6 @@ export function getShortenHistorySnapshot(): ShortenHistorySnapshot {
   cachedHistoryKey = key;
   cachedHistorySnapshot = loadShortenHistory();
 
-
   const migratedRawV2 = window.localStorage.getItem(
     SHORTEN_HISTORY_STORAGE_KEY_V2
   );
