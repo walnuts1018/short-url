@@ -36,8 +36,8 @@ importers:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
       react-i18next:
-        specifier: ^16.5.0
-        version: 16.5.0(i18next@25.7.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+        specifier: ^16.5.1
+        version: 16.5.1(i18next@25.7.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       react-icons:
         specifier: ^5.5.0
         version: 5.5.0(react@19.2.3)
@@ -47,7 +47,7 @@ importers:
     devDependencies:
       '@hatena/eslint-config-hatena':
         specifier: github:hatena/eslint-config-hatena#v3.3.0
-        version: https://codeload.github.com/hatena/eslint-config-hatena/tar.gz/53f846e7210efee39c6db210ece1d7005076b7d6(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
+        version: https://codeload.github.com/hatena/eslint-config-hatena/tar.gz/ed7cdb050c62e9b1466362a18b1668b6b661f5ad(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       '@tailwindcss/postcss':
         specifier: ^4.1.18
         version: 4.1.18
@@ -225,8 +225,8 @@ packages:
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
 
-  '@hatena/eslint-config-hatena@https://codeload.github.com/hatena/eslint-config-hatena/tar.gz/53f846e7210efee39c6db210ece1d7005076b7d6':
-    resolution: {tarball: https://codeload.github.com/hatena/eslint-config-hatena/tar.gz/53f846e7210efee39c6db210ece1d7005076b7d6}
+  '@hatena/eslint-config-hatena@https://codeload.github.com/hatena/eslint-config-hatena/tar.gz/ed7cdb050c62e9b1466362a18b1668b6b661f5ad':
+    resolution: {tarball: https://codeload.github.com/hatena/eslint-config-hatena/tar.gz/ed7cdb050c62e9b1466362a18b1668b6b661f5ad}
     version: 3.3.0
     peerDependencies:
       eslint: ^8.57.0 || ^9.10.0
@@ -2028,8 +2028,8 @@ packages:
     peerDependencies:
       react: ^19.2.3
 
-  react-i18next@16.5.0:
-    resolution: {integrity: sha512-IMpPTyCTKxEj8klCrLKUTIUa8uYTd851+jcu2fJuUB9Agkk9Qq8asw4omyeHVnOXHrLgQJGTm5zTvn8HpaPiqw==}
+  react-i18next@16.5.1:
+    resolution: {integrity: sha512-Hks6UIRZWW4c+qDAnx1csVsCGYeIR4MoBGQgJ+NUoNnO6qLxXuf8zu0xdcinyXUORgGzCdRsexxO1Xzv3sTdnw==}
     peerDependencies:
       i18next: '>= 25.6.2'
       react: '>= 16.8.0'
@@ -2585,7 +2585,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@hatena/eslint-config-hatena@https://codeload.github.com/hatena/eslint-config-hatena/tar.gz/53f846e7210efee39c6db210ece1d7005076b7d6(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)':
+  '@hatena/eslint-config-hatena@https://codeload.github.com/hatena/eslint-config-hatena/tar.gz/ed7cdb050c62e9b1466362a18b1668b6b661f5ad(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)':
     dependencies:
       '@eslint/config-helpers': 0.1.0
       '@eslint/js': 9.39.2
@@ -4389,7 +4389,7 @@ snapshots:
       react: 19.2.3
       scheduler: 0.27.0
 
-  react-i18next@16.5.0(i18next@25.7.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3):
+  react-i18next@16.5.1(i18next@25.7.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3):
     dependencies:
       '@babel/runtime': 7.28.4
       html-parse-stringify: 3.0.1
