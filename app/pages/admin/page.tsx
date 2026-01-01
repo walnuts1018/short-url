@@ -1,12 +1,12 @@
 /* eslint-disable import/no-default-export */
 
 import Link from "next/link";
-import { ClientDateTime } from "./_components/client-datetime";
 import {
   disableLinkAction,
   listAdminLinks,
   restoreLinkAction,
 } from "./_actions/admin";
+import { ClientDateTime } from "./_components/client-datetime";
 
 export default async function AdminPage(props: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
