@@ -28,7 +28,7 @@
   "devDependencies": {
     "@hatena/eslint-config-hatena": "github:hatena/eslint-config-hatena#v3.3.0",
     "@tailwindcss/postcss": "^4.1.18",
-    "@types/node": "^22.19.7",
+    "@types/node": "^24.10.9",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.2",
@@ -40,7 +40,7 @@
     "typescript": "^5.9.3"
   },
   "engines": {
-    "node": "22.22.0",
+    "node": "24.13.0",
     "pnpm": "10.28.2"
   },
   "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264"
